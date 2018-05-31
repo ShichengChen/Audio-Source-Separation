@@ -37,6 +37,7 @@ def time_to_batch(value, dilation, name=None):
 def batch_to_time(value, dilation, name=None):
     with tf.name_scope('batch_to_time'):
         shape = tf.shape(value)
+        print('shape',shape)
         prepared = tf.reshape(value, [dilation, -1, shape[2]])
         transposed = tf.transpose(prepared, perm=[1, 0, 2])
         return tf.reshape(transposed,

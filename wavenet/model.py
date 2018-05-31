@@ -151,32 +151,32 @@ class WaveNetModel(object):
                 layer = dict()
                 if self.scalar_input:
                     initial_channels = 1
-                    initial_filter_width = self.initial_filter_width
+                    initial_filter_width = self.initial_filter_width  #initial_filter_width=32,
                 else:
-                    initial_channels = self.quantization_channels
-                    initial_filter_width = self.filter_width
+                    initial_channels = self.quantization_channels  #quantization_channels=2**8,  "quantization_channels": 256,
+                    initial_filter_width = self.filter_width     #"filter_width": 2,
                 layer['filter'] = create_variable(
                     'filter',
-                    [initial_filter_width,
-                     initial_channels,
-                     self.residual_channels])
+                    [initial_filter_width,     #"filter_width": 2,
+                     initial_channels,         #quantization_channels=2**8,  "quantization_channels": 256,
+                     self.residual_channels])  #"residual_channels": 32,
                 var['causal_layer'] = layer
 
             var['dilated_stack'] = list()
             with tf.variable_scope('dilated_stack'):
-                for i, dilation in enumerate(self.dilations):
+                for i, dilation in enumerate(self.dilations):#"dilations":[1,2,4,8,16,32,64,128,256,512]repeat 5 times
                     with tf.variable_scope('layer{}'.format(i)):
                         current = dict()
                         current['filter'] = create_variable(
                             'filter',
-                            [self.filter_width,
-                             self.residual_channels,
-                             self.dilation_channels])
+                            [self.filter_width, #"filter_width": 2,
+                             self.residual_channels, #"residual_channels": 32,
+                             self.dilation_channels])  #"dilation_channels":32,
                         current['gate'] = create_variable(
                             'gate',
                             [self.filter_width,
-                             self.residual_channels,
-                             self.dilation_channels])
+                             self.residual_channels,  
+                             self.dilation_channels])    #"dilation_channels":32,
                         current['dense'] = create_variable(
                             'dense',
                             [1,
@@ -186,7 +186,7 @@ class WaveNetModel(object):
                             'skip',
                             [1,
                              self.dilation_channels,
-                             self.skip_channels])
+                             self.skip_channels])   #"skip_channels":512,
 
                         if self.global_condition_channels is not None:
                             current['gc_gateweights'] = create_variable(

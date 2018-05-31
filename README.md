@@ -1,4 +1,4 @@
-changed from https://github.com/ibab/tensorflow-wavenet
+#my code is changed from https://github.com/ibab/tensorflow-wavenet
 
 
 
