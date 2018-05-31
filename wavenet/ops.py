@@ -37,7 +37,7 @@ def time_to_batch(value, dilation, name=None):
 def batch_to_time(value, dilation, name=None):
     with tf.name_scope('batch_to_time'):
         shape = tf.shape(value)
-        print('shape',shape)
+        #print(value)
         prepared = tf.reshape(value, [dilation, -1, shape[2]])
         transposed = tf.transpose(prepared, perm=[1, 0, 2])
         return tf.reshape(transposed,
@@ -85,3 +85,14 @@ def mu_law_decode(output, quantization_channels):
         # Perform inverse of mu-law transformation.
         magnitude = (1 / mu) * ((1 + mu)**abs(signal) - 1)
         return tf.sign(signal) * magnitude
+    
+    
+def tf_print(op, tensors, message=None):
+    def print_message(x):
+        sys.stdout.write(message + " %s\n" % x)
+        return x
+
+    prints = [tf.py_func(print_message, [tensor], tensor.dtype) for tensor in tensors]
+    with tf.control_dependencies(prints):
+        op = tf.identity(op)
+    return op
