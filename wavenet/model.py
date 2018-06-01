@@ -117,7 +117,9 @@ class WaveNetModel(object):
     @staticmethod
     def calculate_receptive_field(filter_width, dilations, scalar_input,
                                   initial_filter_width):
+        #print(dilations)
         receptive_field = (filter_width - 1) * sum(dilations) + 1
+        #print('receptive_field',sum(dilations))
         if scalar_input:
             receptive_field += initial_filter_width - 1
         else:
@@ -623,6 +625,7 @@ class WaveNetModel(object):
 
         The variables are all scoped to the given name.
         '''
+        #print(input_batch)
         with tf.name_scope(name):
             # We mu-law encode and quantize the input audioform.
             encoded_input = mu_law_encode(input_batch,

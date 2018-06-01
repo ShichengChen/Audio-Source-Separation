@@ -57,6 +57,9 @@ def load_generic_audio(directory, sample_rate):
             # The file name matches the pattern for containing ids.
             category_id = int(ids[0][0])
         audio, _ = librosa.load(filename, sr=sample_rate, mono=True)
+        #print(librosa.load(filename, sr=sample_rate, mono=True)[0].shape) #(65584,) 16000
+        #print(librosa.load(filename, mono=True)[0].shape,librosa.load(filename, mono=True)[1])  #(90383,) 22050
+        #(65584,) 16000 ((65584,) / 16000 == (90383,) 22050)True
         audio = audio.reshape(-1, 1)
         yield audio, filename, category_id
 
@@ -106,7 +109,7 @@ class AudioReader(object):
         self.gc_enabled = gc_enabled
         self.threads = []
         self.sample_placeholder = tf.placeholder(dtype=tf.float32, shape=None)
-        self.queue = tf.PaddingFIFOQueue(queue_size,
+        self.queue = tf.PaddingFIFOQueue(queue_size, #queue_size=32
                                          ['float32'],
                                          shapes=[(None, 1)])
         self.enqueue = self.queue.enqueue([self.sample_placeholder])
@@ -154,7 +157,7 @@ class AudioReader(object):
         stop = False
         # Go through the dataset multiple times
         while not stop:
-            iterator = load_generic_audio(self.audio_dir, self.sample_rate)
+            iterator = load_generic_audio(self.audio_dir, self.sample_rate)  ##"sample_rate": 16000,
             for audio, filename, category_id in iterator:
                 if self.coord.should_stop():
                     stop = True
