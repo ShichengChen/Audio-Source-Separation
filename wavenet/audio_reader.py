@@ -48,7 +48,9 @@ def load_generic_audio(directory, sample_rate):
     print("files length: {}".format(len(files)))
     randomized_files = randomize_files(files)
     for filename in randomized_files:
+        #print(filename)
         ids = id_reg_exp.findall(filename)
+        #print(ids)
         if not ids:
             # The file name does not match the pattern containing ids, so
             # there is no id.
@@ -61,6 +63,7 @@ def load_generic_audio(directory, sample_rate):
         #print(librosa.load(filename, mono=True)[0].shape,librosa.load(filename, mono=True)[1])  #(90383,) 22050
         #(65584,) 16000 ((65584,) / 16000 == (90383,) 22050)True
         audio = audio.reshape(-1, 1)
+        print(filename, category_id)
         yield audio, filename, category_id
 
 
@@ -71,7 +74,7 @@ def trim_silence(audio, threshold, frame_length=2048):
     energy = librosa.feature.rmse(audio, frame_length=frame_length)
     frames = np.nonzero(energy > threshold)
     indices = librosa.core.frames_to_samples(frames)[1]
-
+    #print('frame',librosa.core.frames_to_samples(frames))
     # Note: indices can be an empty array, if the whole audio was silence.
     return audio[indices[0]:indices[-1]] if indices.size else audio[0:0]
 
@@ -174,10 +177,11 @@ class AudioReader(object):
 
                 audio = np.pad(audio, [[self.receptive_field, 0], [0, 0]],
                                'constant')
-
-                if self.sample_size:
+                #print(self.sample_size)   
+                if self.sample_size:   ##SAMPLE_SIZE = 100000
                     # Cut samples into pieces of size receptive_field +
                     # sample_size with receptive_field overlap
+                    #receptive_field=5117
                     while len(audio) > self.receptive_field:
                         piece = audio[:(self.receptive_field +
                                         self.sample_size), :]

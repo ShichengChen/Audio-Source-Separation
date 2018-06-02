@@ -119,7 +119,7 @@ class WaveNetModel(object):
                                   initial_filter_width):
         #print(dilations)
         receptive_field = (filter_width - 1) * sum(dilations) + 1
-        #print('receptive_field',sum(dilations))
+        #print('receptive_field',receptive_field)
         if scalar_input:
             receptive_field += initial_filter_width - 1
         else:
