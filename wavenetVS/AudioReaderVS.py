@@ -46,10 +46,12 @@ def load_one_audio(directory, sample_rate):
         print(filename[0],filename[1])
         audio0, samplerate = sf.read(filename[0], dtype='float32')
         audio0 = librosa.resample(audio0.T, samplerate, sample_rate)
-        audio1, samplerate = sf.read(filename[1], dtype='float32')
-        audio1 = librosa.resample(audio0.T, samplerate, sample_rate)
         audio0 = audio0.reshape(-1, 1)
+        
+        audio1, samplerate = sf.read(filename[1], dtype='float32')
+        audio1 = librosa.resample(audio1.T, samplerate, sample_rate)
         audio1 = audio1.reshape(-1, 1)
+        assert(audio0.shape==audio1.shape)
         yield audio0,audio1, filename[0], 0
 
 def load_generic_audio(directory, sample_rate):
@@ -205,7 +207,7 @@ class AudioReader(object):
                     # Cut samples into pieces of size receptive_field +
                     # sample_size with receptive_field overlap
                     #receptive_field=5117
-                    while len(xaudio) > self.receptive_field:
+                    while len(xaudio) > self.receptive_field and len(yaudio) > self.receptive_field:
                         xpiece = xaudio[:(self.receptive_field +self.sample_size), :]
                         sess.run(self.xenqueue,feed_dict={self.xsample_placeholder: xpiece})
                         xaudio = xaudio[self.sample_size:, :]

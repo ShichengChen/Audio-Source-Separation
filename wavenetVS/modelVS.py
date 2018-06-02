@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-
+import sys
 from .ops import causal_conv, mu_law_encode
 
 
@@ -654,11 +654,11 @@ class WaveNetModel(object):
                 # Cut off the samples corresponding to the receptive field
                 # for the first predicted sample.
                 target_output = tf.slice(
-                    tf.reshape(
-                        yencoded,
-                        [self.batch_size, -1, self.quantization_channels]),
+                    tf.reshape(yencoded,[self.batch_size, -1, self.quantization_channels]),
                     [0, self.receptive_field, 0],
                     [-1, -1, -1])
+                print('target_output,label',target_output)
+                sys.stdout.flush()
                 target_output = tf.reshape(target_output,
                                            [-1, self.quantization_channels])
                 prediction = tf.reshape(raw_output,
