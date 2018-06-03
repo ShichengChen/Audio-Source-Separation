@@ -40,10 +40,12 @@ def find_files(directory, pattern='*.wav'):
             files.append(os.path.join(root, filename))
     return files
 
-def load_one_audio(directory, sample_rate):
-    allfiles = [['./vocalSeparation/origin_mix.wav','./vocalSeparation/origin_vocal.wav']]
+def load_one_audio(directory, sample_rate,trainOrNot=True):
+    if(trainOrNot):
+        allfiles = [['./vsCorpus/origin_mix.wav','./vsCorpus/origin_vocal.wav']]
+    else:
+        allfiles = [['./vsCorpus/pred_mix.wav','./vsCorpus/pred_vocal.wav']]
     for filename in allfiles:
-        print(filename[0],filename[1])
         audio0, samplerate = sf.read(filename[0], dtype='float32')
         audio0 = librosa.resample(audio0.T, samplerate, sample_rate)
         audio0 = audio0.reshape(-1, 1)
@@ -80,16 +82,17 @@ def load_generic_audio(directory, sample_rate):
         yield audio, filename, category_id
 
 
-def trim_silence(audio, threshold, frame_length=2048):
+def trim_silence(audio0,audio1, threshold, frame_length=2048):
     '''Removes silence at the beginning and end of a sample.'''
-    if audio.size < frame_length:
-        frame_length = audio.size
-    energy = librosa.feature.rmse(audio, frame_length=frame_length)
+    if audio0.size < frame_length:
+        frame_length = audio0.size
+    energy = librosa.feature.rmse(audio0, frame_length=frame_length//2)
     frames = np.nonzero(energy > threshold)
     indices = librosa.core.frames_to_samples(frames)[1]
     #print('frame',librosa.core.frames_to_samples(frames))
     # Note: indices can be an empty array, if the whole audio was silence.
-    return audio[indices[0]:indices[-1]] if indices.size else audio[0:0]
+    if(len(indices)):return audio0[indices[0]:indices[-1]],audio1[indices[0]:indices[-1]]
+    return audio0[0:0],audio1[0:0]
 
 
 def not_all_have_id(files):
@@ -124,17 +127,27 @@ class AudioReader(object):
         self.silence_threshold = silence_threshold
         self.gc_enabled = gc_enabled
         self.threads = []
-        self.xsample_placeholder = tf.placeholder(dtype=tf.float32, shape=None)
-        self.ysample_placeholder = tf.placeholder(dtype=tf.float32, shape=None)
-        self.xqueue = tf.PaddingFIFOQueue(queue_size, #queue_size=32
+        self.trxsample_placeholder = tf.placeholder(dtype=tf.float32, shape=None)
+        self.trysample_placeholder = tf.placeholder(dtype=tf.float32, shape=None)
+        self.trxqueue = tf.PaddingFIFOQueue(queue_size, #queue_size=32
                                          ['float32'],shapes=[(None, 1)])
-        self.yqueue = tf.PaddingFIFOQueue(queue_size, #queue_size=32
+        self.tryqueue = tf.PaddingFIFOQueue(queue_size, #queue_size=32
                                          ['float32'],shapes=[(None, 1)])
-        self.xenqueue = self.xqueue.enqueue([self.xsample_placeholder])
-        self.yenqueue = self.yqueue.enqueue([self.ysample_placeholder])
+        self.trxenqueue = self.trxqueue.enqueue([self.trxsample_placeholder])
+        self.tryenqueue = self.tryqueue.enqueue([self.trysample_placeholder])
+        
+        self.vxsample_placeholder = tf.placeholder(dtype=tf.float32, shape=None)
+        self.vysample_placeholder = tf.placeholder(dtype=tf.float32, shape=None)
+        self.vxqueue = tf.PaddingFIFOQueue(queue_size, #queue_size=32
+                                         ['float32'],shapes=[(None, 1)])
+        self.vyqueue = tf.PaddingFIFOQueue(queue_size, #queue_size=32
+                                         ['float32'],shapes=[(None, 1)])
+        self.vxenqueue = self.vxqueue.enqueue([self.vxsample_placeholder])
+        self.vyenqueue = self.vyqueue.enqueue([self.vysample_placeholder])
+        
 
         if self.gc_enabled:
-            ##TODO xaudio,yaudio
+            ##TODO trxaudio,tryaudio
             pass
             self.id_placeholder = tf.placeholder(dtype=tf.int32, shape=())
             self.gc_queue = tf.PaddingFIFOQueue(queue_size, ['int32'],
@@ -169,71 +182,106 @@ class AudioReader(object):
         else:
             self.gc_category_cardinality = None
 
-    def dequeue(self, num_elements):
-        output = (self.xqueue.dequeue_many(num_elements),self.yqueue.dequeue_many(num_elements))
+    def trdequeue(self, num_elements):
+        output = (self.trxqueue.dequeue_many(num_elements),self.tryqueue.dequeue_many(num_elements))
+        return output
+    def vdequeue(self, num_elements):
+        output = (self.vxqueue.dequeue_many(num_elements),self.vyqueue.dequeue_many(num_elements))
         return output
 
     def dequeue_gc(self, num_elements):
-        ##TODO xaudio,yaudio
+        ##TODO trxaudio,tryaudio
         pass
         return self.gc_queue.dequeue_many(num_elements)
-
-    def thread_main(self, sess):
+    
+    def thread_val(self, sess):
+        stop = False
+        while not stop:
+            iterator = load_one_audio(self.audio_dir, self.sample_rate,trainOrNot=False)
+            for vxaudio,vyaudio, filename, category_id in iterator:
+                if self.coord.should_stop():
+                    stop = True
+                    break
+                vxaudio = np.pad(vxaudio, [[self.receptive_field, 0], [0, 0]],'constant')
+                vyaudio = np.pad(vyaudio, [[self.receptive_field, 0], [0, 0]],'constant')
+                sess.run(self.vxenqueue,feed_dict={self.vxsample_placeholder: vxaudio})
+                sess.run(self.vyenqueue,feed_dict={self.vysample_placeholder: vyaudio})
+                if self.gc_enabled:
+                    ##TODO xaudio,yaudio
+                    pass
+                    sess.run(self.gc_enqueue,feed_dict={self.id_placeholder: category_id})
+    
+    def thread_train(self, sess):
         stop = False
         # Go through the dataset multiple times
         while not stop:
-            iterator = load_one_audio(self.audio_dir, self.sample_rate)  ##"sample_rate": 16000,
-            #iterator = load_generic_audio(self.audio_dir, self.sample_rate)  ##"sample_rate": 16000,
-            for xaudio,yaudio, filename, category_id in iterator:
+            iterator = load_one_audio(self.audio_dir, self.sample_rate,trainOrNot=True)
+            for trxaudio,tryaudio, filename, category_id in iterator:
                 if self.coord.should_stop():
                     stop = True
                     break
                 if self.silence_threshold is not None:
-                    ##TODO xaudio,yaudio
-                    pass
                     # Remove silence
-                    audio = trim_silence(audio[:, 0], self.silence_threshold)
-                    audio = audio.reshape(-1, 1)
-                    if audio.size == 0:
+                    trxaudio,tryaudio = trim_silence(trxaudio[:, 0],tryaudio[:, 0], self.silence_threshold)
+                    trxaudio,tryaudio = trxaudio.reshape(-1, 1),tryaudio.reshape(-1, 1)
+                    if trxaudio.size == 0:
                         print("Warning: {} was ignored as it contains only "
                               "silence. Consider decreasing trim_silence "
-                              "threshold, or adjust volume of the audio."
+                              "threshold, or adjust volume of the trxaudio."
                               .format(filename))
 
-                xaudio = np.pad(xaudio, [[self.receptive_field, 0], [0, 0]],'constant')
-                yaudio = np.pad(yaudio, [[self.receptive_field, 0], [0, 0]],'constant')
+
+                trxaudio = np.pad(trxaudio, [[self.receptive_field, 0], [0, 0]],'constant')
+                tryaudio = np.pad(tryaudio, [[self.receptive_field, 0], [0, 0]],'constant')
                 #print(self.sample_size)   
                 if self.sample_size:   ##SAMPLE_SIZE = 100000
                     # Cut samples into pieces of size receptive_field +
                     # sample_size with receptive_field overlap
                     #receptive_field=5117
-                    while len(xaudio) > self.receptive_field and len(yaudio) > self.receptive_field:
-                        xpiece = xaudio[:(self.receptive_field +self.sample_size), :]
-                        sess.run(self.xenqueue,feed_dict={self.xsample_placeholder: xpiece})
-                        xaudio = xaudio[self.sample_size:, :]
+                    startnum = np.arange(len(trxaudio)-self.receptive_field-1)
+                    np.random.shuffle(startnum)
+                    for i in range(len(startnum)):
+                        trxpiece = trxaudio[i:i+(self.receptive_field + self.sample_size), :]
+                        sess.run(self.trxenqueue,feed_dict={self.trxsample_placeholder: trxpiece})
                         
-                        ypiece = yaudio[:(self.receptive_field +self.sample_size), :]
-                        sess.run(self.yenqueue,feed_dict={self.ysample_placeholder: ypiece})
-                        yaudio = yaudio[self.sample_size:, :]
+                        trypiece = tryaudio[i:i+(self.receptive_field + self.sample_size), :]
+                        sess.run(self.tryenqueue,feed_dict={self.trysample_placeholder: trypiece})
                         
                         if self.gc_enabled:
-                            ##TODO xaudio,yaudio
+                            pass ##TODO trxaudio,tryaudio
+                            sess.run(self.gc_enqueue, feed_dict={self.id_placeholder: category_id})
+                    '''while len(trxaudio) > self.receptive_field:
+                        trxpiece = trxaudio[:(self.receptive_field +self.sample_size), :]
+                        sess.run(self.trxenqueue,feed_dict={self.trxsample_placeholder: trxpiece})
+                        trxaudio = trxaudio[self.sample_size:, :]
+                        
+                        trypiece = tryaudio[:(self.receptive_field +self.sample_size), :]
+                        sess.run(self.tryenqueue,feed_dict={self.trysample_placeholder: trypiece})
+                        tryaudio = tryaudio[self.sample_size:, :]
+                        
+                        if self.gc_enabled:
+                            ##TODO trxaudio,tryaudio
                             pass
                             sess.run(self.gc_enqueue, feed_dict={
-                                self.id_placeholder: category_id})
+                                self.id_placeholder: category_id})'''
                 else:
-                    sess.run(self.xenqueue,feed_dict={self.xsample_placeholder: xaudio})
-                    sess.run(self.yenqueue,feed_dict={self.ysample_placeholder: yaudio})
+                    sess.run(self.trxenqueue,feed_dict={self.trxsample_placeholder: trxaudio})
+                    sess.run(self.tryenqueue,feed_dict={self.trysample_placeholder: tryaudio})
                     if self.gc_enabled:
-                        ##TODO xaudio,yaudio
+                        ##TODO trxaudio,tryaudio
                         pass
                         sess.run(self.gc_enqueue,
                                  feed_dict={self.id_placeholder: category_id})
 
     def start_threads(self, sess, n_threads=1):
         for _ in range(n_threads):
-            thread = threading.Thread(target=self.thread_main, args=(sess,))
-            thread.daemon = True  # Thread will close when parent quits.
-            thread.start()
-            self.threads.append(thread)
+            thread0 = threading.Thread(target=self.thread_train, args=(sess,))
+            thread0.daemon = True  # Thread will close when parent quits.
+            thread0.start()
+            self.threads.append(thread0)
+            
+            thread1 = threading.Thread(target=self.thread_val, args=(sess,))
+            thread1.daemon = True  # Thread will close when parent quits.
+            thread1.start()
+            self.threads.append(thread1)
         return self.threads

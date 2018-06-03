@@ -49,16 +49,13 @@ def causal_conv(value, filter_, dilation, name='causal_conv'):
         filter_width = tf.shape(filter_)[0]
         if dilation > 1:
             transformed = time_to_batch(value, dilation)
-            conv = tf.nn.conv1d(transformed, filter_, stride=1,
-                                padding='VALID')
+            conv = tf.nn.conv1d(transformed, filter_, stride=1,padding='VALID')
             restored = batch_to_time(conv, dilation)
         else:
             restored = tf.nn.conv1d(value, filter_, stride=1, padding='VALID')
         # Remove excess elements at the end.
         out_width = tf.shape(value)[1] - (filter_width - 1) * dilation
-        result = tf.slice(restored,
-                          [0, 0, 0],
-                          [-1, out_width, -1])
+        result = tf.slice(restored,[0, 0, 0],[-1, out_width, -1])
         return result
 
 

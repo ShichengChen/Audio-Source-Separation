@@ -42,15 +42,20 @@ from tensorflow.python.client import timeline
 from wavenetVS import WaveNetModel, AudioReader, optimizer_factory
 
 
+'''import os
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"'''
+
+
 # In[4]:
 
 
 BATCH_SIZE = 1
-DATA_DIRECTORY = './vocalSeparation'
+DATA_DIRECTORY = './vsCorpus'
 LOGDIR_ROOT = './logdirVS'
 CHECKPOINT_EVERY = 50
 NUM_STEPS = int(1e5)
-LEARNING_RATE = 1e-3
+LEARNING_RATE = 1e-2
 WAVENET_PARAMS = './wavenet_params.json'
 STARTED_DATESTRING = "{0:%Y-%m-%dT%H-%M-%S}".format(datetime.now())
 SAMPLE_SIZE = 100000
@@ -265,8 +270,10 @@ with tf.name_scope('create_inputs'):
                                                                wavenet_params["initial_filter_width"]),
         sample_size=args.sample_size,  #SAMPLE_SIZE = 100000
         silence_threshold=silence_threshold)
-    audio_batch = reader.dequeue(args.batch_size)  #BATCH_SIZE = 1
+    audio_batch = reader.trdequeue(args.batch_size)  #BATCH_SIZE = 1
+    valaudio_batch = reader.vdequeue(args.batch_size)  #BATCH_SIZE = 1
     if gc_enabled:
+        ##TODO train and val
         gc_id_batch = reader.dequeue_gc(args.batch_size)
     else:
         gc_id_batch = None
@@ -289,15 +296,17 @@ net = WaveNetModel(
 
 if args.l2_regularization_strength == 0:
     args.l2_regularization_strength = None
-#print('audio_batch',audio_batch)
-loss = net.loss(input_batch=audio_batch,
+valloss = net.valloss(input_batch=valaudio_batch,
+                global_condition_batch=gc_id_batch,
+                l2_regularization_strength=args.l2_regularization_strength)
+trloss = net.trloss(input_batch=audio_batch,
                 global_condition_batch=gc_id_batch,
                 l2_regularization_strength=args.l2_regularization_strength)
 optimizer = optimizer_factory[args.optimizer](
                 learning_rate=args.learning_rate,
                 momentum=args.momentum)
 trainable = tf.trainable_variables()
-optim = optimizer.minimize(loss, var_list=trainable)
+optim = optimizer.minimize(trloss, var_list=trainable)
 
 # Set up logging for TensorBoard.
 writer = tf.summary.FileWriter(logdir)
@@ -306,6 +315,9 @@ run_metadata = tf.RunMetadata()
 summaries = tf.summary.merge_all()
 
 # Set up session
+#config = tf.ConfigProto(log_device_placement=False)
+#config.gpu_options.allow_growth=True
+#sess = tf.Session(config=config)
 sess = tf.Session(config=tf.ConfigProto(log_device_placement=False))
 init = tf.global_variables_initializer()
 sess.run(init)
@@ -326,11 +338,14 @@ except:
           "the previous model.")
     raise
 
+    
+    
 threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 reader.start_threads(sess)
 
 step = None
 last_saved_step = saved_global_step
+minvalloss = 10000
 try:
     for step in range(saved_global_step + 1, args.num_steps):
         start_time = time.time()
@@ -339,8 +354,8 @@ try:
             print('Storing metadata')
             run_options = tf.RunOptions(
                 trace_level=tf.RunOptions.FULL_TRACE)
-            summary, loss_value, _ = sess.run(
-                [summaries, loss, optim],
+            summary, trloss_value, _ = sess.run(
+                [summaries, trloss, optim],
                 options=run_options,
                 run_metadata=run_metadata)
             writer.add_summary(summary, step)
@@ -351,16 +366,21 @@ try:
             with open(timeline_path, 'w') as f:
                 f.write(tl.generate_chrome_trace_format(show_memory=True))
         else:
-            summary, loss_value, _ = sess.run([summaries, loss, optim])
+            summary, trloss_value, _ = sess.run([summaries, trloss, optim])
             writer.add_summary(summary, step)
-
         duration = time.time() - start_time
-        print('step {:d} - loss = {:.3f}, ({:.3f} sec/step)'
-              .format(step, loss_value, duration))
-
+        print('step {:d} - trloss = {:.3f}, ({:.3f} sec/step)'
+              .format(step, trloss_value, duration))
+        
+        
         if step % args.checkpoint_every == 0:
-            save(saver, sess, logdir, step)
-            last_saved_step = step
+            valloss_value = sess.run(valloss)
+            print('validateLoss = {:.3f}, ({:.3f} sec/step)'
+              .format(valloss_value, duration))
+            if(valloss_value < minvalloss):
+                save(saver, sess, logdir, step)
+                last_saved_step = step
+                minvalloss = valloss_value
 
 except KeyboardInterrupt:
     # Introduce a line break after ^C is displayed so save message
@@ -373,4 +393,10 @@ finally:
     coord.join(threads)
 
 
+
+
+# In[ ]:
+
+
+#step 3000---loss 4.250
 

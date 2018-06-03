@@ -1,0 +1,10 @@
+hidden_dim = 128
+dilation = [1,2,4,8,16,32,64,128,256,512]
+sample_rate = 16000
+timestep = 6080
+is_training = True
+use_mulaw = True
+batch_size = 1
+num_epochs = 100
+save_dir = './logdir'
+test_data = 'test.wav'

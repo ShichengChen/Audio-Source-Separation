@@ -583,8 +583,7 @@ class WaveNetModel(object):
             raw_output = self._create_network(encoded, gc_embedding)
             out = tf.reshape(raw_output, [-1, self.quantization_channels])
             # Cast to float64 to avoid bug in TensorFlow
-            proba = tf.cast(
-                tf.nn.softmax(tf.cast(out, tf.float64)), tf.float32)
+            proba = tf.cast(tf.nn.softmax(tf.cast(out, tf.float64)), tf.float32)
             last = tf.slice(
                 proba,
                 [tf.shape(proba)[0] - 1, 0],
@@ -608,15 +607,76 @@ class WaveNetModel(object):
             gc_embedding = self._embed_gc(global_condition)
             raw_output = self._create_generator(encoded, gc_embedding)
             out = tf.reshape(raw_output, [-1, self.quantization_channels])
-            proba = tf.cast(
-                tf.nn.softmax(tf.cast(out, tf.float64)), tf.float32)
+            proba = tf.cast(tf.nn.softmax(tf.cast(out, tf.float64)), tf.float32)
             last = tf.slice(
                 proba,
                 [tf.shape(proba)[0] - 1, 0],
                 [1, self.quantization_channels])
             return tf.reshape(last, [-1])
+    
+    def valloss(self,input_batch,global_condition_batch=None,
+             l2_regularization_strength=None,name='wavenet'):
+        with tf.name_scope(name):
+            # We mu-law encode and quantize the input audioform.
+            xinput_batch,yinput_batch = input_batch[0],input_batch[1]
+            xencoded_input = mu_law_encode(xinput_batch,self.quantization_channels)
+            yencoded_input = mu_law_encode(yinput_batch,self.quantization_channels)
 
-    def loss(self,
+            gc_embedding = self._embed_gc(global_condition_batch)
+            xencoded,yencoded = self._one_hot(xencoded_input),self._one_hot(yencoded_input)
+            if self.scalar_input:
+                #TODO xinput_batch and yinput_batch
+                pass
+                network_input = tf.reshape(
+                    tf.cast(input_batch, tf.float32),
+                    [self.batch_size, -1, 1])
+            else:
+                xnetwork_input,ynetwork_input = xencoded,yencoded
+
+            # Cut off the last sample of network input to preserve causality.
+            xnetwork_input_width = tf.shape(xnetwork_input)[1] - 1
+            xnetwork_input = tf.slice(xnetwork_input, [0, 0, 0],
+                                     [-1, xnetwork_input_width, -1])
+
+            raw_output = self._create_network(xnetwork_input, gc_embedding)
+
+            with tf.name_scope('lossForValidate'):
+                # Cut off the samples corresponding to the receptive field
+                # for the first predicted sample.
+                target_output = tf.slice(
+                    tf.reshape(yencoded,[self.batch_size, -1, self.quantization_channels]),
+                    [0, self.receptive_field, 0],
+                    [-1, -1, -1])
+                target_output = tf.reshape(target_output,
+                                           [-1, self.quantization_channels])
+                prediction = tf.reshape(raw_output,
+                                        [-1, self.quantization_channels])
+                loss = tf.nn.softmax_cross_entropy_with_logits_v2(
+                    logits=prediction,
+                    labels=target_output)
+                reduced_loss = tf.reduce_mean(loss)
+
+                tf.summary.scalar('loss', reduced_loss)
+                return reduced_loss
+                '''if l2_regularization_strength is None:
+                    return reduced_loss
+                else:
+                    # L2 regularization for all trainable parameters
+                    l2_loss = tf.add_n([tf.nn.l2_loss(v)
+                                        for v in tf.trainable_variables()
+                                        if not('bias' in v.name)])
+
+                    # Add the regularization term to the loss
+                    total_loss = (reduced_loss +
+                                  l2_regularization_strength * l2_loss)
+
+                    tf.summary.scalar('l2_loss', l2_loss)
+                    tf.summary.scalar('total_loss', total_loss)
+
+                    return total_loss'''
+
+    
+    def trloss(self,
              input_batch,
              global_condition_batch=None,
              l2_regularization_strength=None,
@@ -657,13 +717,11 @@ class WaveNetModel(object):
                     tf.reshape(yencoded,[self.batch_size, -1, self.quantization_channels]),
                     [0, self.receptive_field, 0],
                     [-1, -1, -1])
-                print('target_output,label',target_output)
-                sys.stdout.flush()
                 target_output = tf.reshape(target_output,
                                            [-1, self.quantization_channels])
                 prediction = tf.reshape(raw_output,
                                         [-1, self.quantization_channels])
-                loss = tf.nn.softmax_cross_entropy_with_logits(
+                loss = tf.nn.softmax_cross_entropy_with_logits_v2(
                     logits=prediction,
                     labels=target_output)
                 reduced_loss = tf.reduce_mean(loss)
