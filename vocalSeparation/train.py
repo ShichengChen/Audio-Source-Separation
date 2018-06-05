@@ -28,8 +28,8 @@ class Graph:
             self.merged = tf.summary.merge_all()
 
 def main():
-    mixture = np.load('./data/mixtures_data.npy')
-    vocals = np.load('./data/vocals.npy')
+    mixture = np.load('.mixtures_data.npy')
+    vocals = np.load('.vocals.npy')
 
     num_batch = len(mixture) // hp.batch_size
 

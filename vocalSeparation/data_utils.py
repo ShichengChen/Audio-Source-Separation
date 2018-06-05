@@ -1,44 +1,58 @@
+
+# coding: utf-8
+
+# In[16]:
+
+
 import os
 import numpy as np
 import librosa
 import hyperparams as hp
+import soundfile as sf
 
-def load_data():
-    mixtures, vocals = list(), list()
-    for path, subdirs, files in os.walk('./data/DSD100/Mixtures/Dev'):
-        for name in [f for f in files if f.endswith(".wav")]:
-            # a = librosa.load(os.path.join(path, name), sr=44100)[0].shape
-            mixtures.append(os.path.join(path, name))
 
-    for path, subdirs, files in os.walk('./data/DSD100/Sources/Dev'):
-        for subdir in subdirs:
-            vocal = os.path.join(os.path.join(path, subdir), "vocals.wav")
-            vocals.append(vocal)
+# In[15]:
 
-    num_wavs = len(mixtures)
 
-    return mixtures, vocals, num_wavs
+arrays=[]
+data = np.arange(10)
+timestep = 3
+lens = 3
+print((np.reshape(data[:timestep * lens],[-1, 3]).shape))
+print((np.expand_dims(np.reshape(data[:timestep * lens],[-1, 3]),-1)).shape)
+arrays.append(np.expand_dims(np.reshape(data[:timestep * lens],[-1, 3]),-1))
+arrays.append(np.expand_dims(np.reshape(data[:timestep * lens],[-1, 3]),-1))
+np.vstack(arrays).shape
+
+
+# In[19]:
+
 
 def get_rawwave(_input):
-    return librosa.load(_input, sr=hp.sample_rate)
+    audio0, samplerate = sf.read(_input, dtype='float32')
+    audio0 = librosa.resample(audio0.T, samplerate, hp.sample_rate)
+    audio0 = audio0.reshape(-1)
+    return audio0
 
 def make_rawdata(is_training=True, name="data"):
 
-    m, v, n = load_data()
+    i = '../vsCorpus/origin_mix.wav'
+    j = '../vsCorpus/origin_vocal.wav'
     arrays = []
     arrays_2 = []
-    for i, j in zip(m, v):
-        data = get_rawwave(i)[0]
-        lens = len(data) // hp.timestep
-        arrays.append(np.expand_dims(np.reshape(data[:hp.timestep * lens], [-1, hp.timestep]), -1))
+    data = get_rawwave(i)
+    print(data.shape)
+    lens = len(data) // hp.timestep
+    arrays.append(np.expand_dims(np.reshape(data[:hp.timestep * lens], 
+                                                [-1, hp.timestep]), -1))
 
-        if is_training:
-            data_2 = get_rawwave(j)[0]
-            arrays_2.append(np.expand_dims(np.reshape(data_2[:hp.timestep * lens], [-1, hp.timestep]), -1))
-    print np.vstack(arrays).shape
-    np.save("./data/mixtures_%s.npy" % name, np.vstack(arrays))
-    if is_training:
-        np.save("./data/vocals.npy", np.vstack(arrays_2))
+    data_2 = get_rawwave(j)
+    arrays_2.append(np.expand_dims(np.reshape(data_2[:hp.timestep * lens], 
+                                                      [-1, hp.timestep]), -1))
+    print (np.vstack(arrays).shape)
+    np.save("./mixtures.npy", np.vstack(arrays))
+
+    np.save("./vocals.npy", np.vstack(arrays_2))
 
 def dataset_shuffling(x, y):
     shuffled_idx = np.arange(len(y))
@@ -52,3 +66,4 @@ def get_batch(x, y, curr_index, batch_size):
 
 if __name__ == '__main__':
     make_rawdata(is_training=hp.is_training)
+

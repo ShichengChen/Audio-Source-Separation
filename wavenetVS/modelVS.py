@@ -1,8 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import sys
-from .ops import causal_conv, mu_law_encode
-
+from .ops import causal_conv, mu_law_encode,mu_law_decode
 
 def create_variable(name, shape):
     '''Create a convolution filter variable with the specified name and shape,
@@ -614,6 +613,25 @@ class WaveNetModel(object):
                 [1, self.quantization_channels])
             return tf.reshape(last, [-1])
     
+   
+    def generateFile(self,input_batch,global_condition_batch=None,
+            l2_regularization_strength=None,name='wavenet'):
+            xinput_batch,_ = input_batch[0],input_batch[1]
+            xencoded_input = mu_law_encode(xinput_batch,self.quantization_channels)
+            xencoded = self._one_hot(xencoded_input)
+            xnetwork_input = xencoded
+            xnetwork_input_width = tf.shape(xnetwork_input)[1] - 1
+            xnetwork_input = tf.slice(xnetwork_input, [0, 1, 0],[-1, -1, -1])
+            raw_output = self._create_network(xnetwork_input, None)
+            prediction = tf.reshape(raw_output,[-1, self.quantization_channels])
+            ans = tf.argmax(prediction,axis=1)
+            print('ans0',ans.shape)
+            ans = mu_law_decode(ans,self.quantization_channels)
+            return ans
+       
+            
+
+    
     def valloss(self,input_batch,global_condition_batch=None,
              l2_regularization_strength=None,name='wavenet'):
         with tf.name_scope(name):
@@ -621,7 +639,6 @@ class WaveNetModel(object):
             xinput_batch,yinput_batch = input_batch[0],input_batch[1]
             xencoded_input = mu_law_encode(xinput_batch,self.quantization_channels)
             yencoded_input = mu_law_encode(yinput_batch,self.quantization_channels)
-
             gc_embedding = self._embed_gc(global_condition_batch)
             xencoded,yencoded = self._one_hot(xencoded_input),self._one_hot(yencoded_input)
             if self.scalar_input:
@@ -635,11 +652,13 @@ class WaveNetModel(object):
 
             # Cut off the last sample of network input to preserve causality.
             xnetwork_input_width = tf.shape(xnetwork_input)[1] - 1
-            xnetwork_input = tf.slice(xnetwork_input, [0, 0, 0],
-                                     [-1, xnetwork_input_width, -1])
+            xnetwork_input = tf.slice(xnetwork_input, [0, 1, 0],[-1, -1, -1])
+            #xnetwork_input = tf.slice(xnetwork_input, [0, 0, 0],
+                                      #[-1, xnetwork_input_width, -1])
 
             raw_output = self._create_network(xnetwork_input, gc_embedding)
 
+            print('raw_output',raw_output)
             with tf.name_scope('lossForValidate'):
                 # Cut off the samples corresponding to the receptive field
                 # for the first predicted sample.
@@ -658,7 +677,7 @@ class WaveNetModel(object):
 
                 tf.summary.scalar('loss', reduced_loss)
                 return reduced_loss
-                '''if l2_regularization_strength is None:
+                if l2_regularization_strength is None:
                     return reduced_loss
                 else:
                     # L2 regularization for all trainable parameters
@@ -673,7 +692,7 @@ class WaveNetModel(object):
                     tf.summary.scalar('l2_loss', l2_loss)
                     tf.summary.scalar('total_loss', total_loss)
 
-                    return total_loss'''
+                    return total_loss
 
     
     def trloss(self,
@@ -704,9 +723,11 @@ class WaveNetModel(object):
                 xnetwork_input,ynetwork_input = xencoded,yencoded
 
             # Cut off the last sample of network input to preserve causality.
-            xnetwork_input_width = tf.shape(xnetwork_input)[1] - 1
-            xnetwork_input = tf.slice(xnetwork_input, [0, 0, 0],
-                                     [-1, xnetwork_input_width, -1])
+            #xnetwork_input_width = tf.shape(xnetwork_input)[1] - 1
+            xnetwork_input = tf.slice(xnetwork_input, [0, 1, 0],[-1, -1, -1])
+            #xnetwork_input = tf.slice(xnetwork_input, [0, 0, 0],
+                                      #[-1, xnetwork_input_width, -1])
+                                       
 
             raw_output = self._create_network(xnetwork_input, gc_embedding)
 
