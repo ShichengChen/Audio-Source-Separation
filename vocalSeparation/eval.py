@@ -4,6 +4,10 @@ import hyperparams as hp
 import librosa
 import soundfile as sf
 
+import os
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+
 class Graph:
     def __init__(self):
         self.graph = tf.Graph()
@@ -22,10 +26,10 @@ def main():
 
     g = Graph()
     
-    filename = ['./vsCorpus/pred_mix.wav','./vsCorpus/pred_vocal.wav']
-    mixture, samplerate = sf.read(filename[0], dtype='float32')
+    filename = ['../vsCorpus/pred_mix.wav','../vsCorpus/pred_vocal.wav']
+    audio0, samplerate = sf.read(filename[0], dtype='float32')
     mixture = librosa.resample(audio0.T, samplerate, hp.sample_rate)
-    mixture = audio0.reshape(-1)
+    mixture = mixture.reshape(-1)
     
     mixture_len = len(mixture) // hp.timestep
     print (mixture_len)
@@ -36,7 +40,7 @@ def main():
         with tf.Session() as sess:
             saver = tf.train.Saver()
             saver.restore(sess, tf.train.latest_checkpoint(hp.save_dir))
-            print "restore successfully!"
+            print ("restore successfully!")
 
             outputs = []
             for part in mixture:
@@ -46,7 +50,7 @@ def main():
                 outputs.append(output)
 
             result = np.vstack(outputs).reshape(-1)
-            sf.write('./vsCorpus/result.wav',result,hp.sample_rate)
+            sf.write('../vsCorpus/result.wav',result,hp.sample_rate)
 
 if __name__ == '__main__':
     main()

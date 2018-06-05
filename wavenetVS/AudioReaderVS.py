@@ -220,11 +220,11 @@ class AudioReader(object):
         filename = ['./vsCorpus/origin_mix.wav','./vsCorpus/origin_vocal.wav']
         audio0, samplerate = sf.read(filename[0], dtype='float32')
         audio0 = librosa.resample(audio0.T, samplerate, self.sample_rate)
-        audio0 = audio0.reshape(-1, 1)
+        audio0 = audio0.reshape(-1, 1)[:self.sample_size*2,:]
 
         audio1, samplerate = sf.read(filename[1], dtype='float32')
         audio1 = librosa.resample(audio1.T, samplerate, self.sample_rate)
-        audio1 = audio1.reshape(-1, 1)
+        audio1 = audio1.reshape(-1, 1)[:self.sample_size*2,:]
         audio0 = np.pad(audio0, [[self.receptive_field, 0], [0, 0]],'constant')
         audio1 = np.pad(audio1, [[self.receptive_field, 0], [0, 0]],'constant')
         assert(audio0.shape==audio1.shape)
@@ -249,7 +249,7 @@ class AudioReader(object):
                 #receptive_field=5117
                 lens = self.sample_size+self.receptive_field
                 startnum = np.arange(int((len(audio0)-lens)/lens))
-                np.random.shuffle(startnum)
+                #np.random.shuffle(startnum)
                 #print('train',startnum)
                 for i in startnum:
                     #print('trx',sess.run(self.trxqueue.size()))

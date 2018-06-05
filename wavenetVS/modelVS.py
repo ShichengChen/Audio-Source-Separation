@@ -651,10 +651,9 @@ class WaveNetModel(object):
                 xnetwork_input,ynetwork_input = xencoded,yencoded
 
             # Cut off the last sample of network input to preserve causality.
-            xnetwork_input_width = tf.shape(xnetwork_input)[1] - 1
-            xnetwork_input = tf.slice(xnetwork_input, [0, 1, 0],[-1, -1, -1])
-            #xnetwork_input = tf.slice(xnetwork_input, [0, 0, 0],
-                                      #[-1, xnetwork_input_width, -1])
+            xinput_width = tf.shape(xnetwork_input)[1] - 1
+            #xnetwork_input = tf.slice(xnetwork_input, [0, 1, 0],[-1, -1, -1])
+            xnetwork_input = tf.slice(xnetwork_input, [0, 0, 0],[-1,xinput_width,-1])
 
             raw_output = self._create_network(xnetwork_input, gc_embedding)
 
@@ -723,10 +722,9 @@ class WaveNetModel(object):
                 xnetwork_input,ynetwork_input = xencoded,yencoded
 
             # Cut off the last sample of network input to preserve causality.
-            #xnetwork_input_width = tf.shape(xnetwork_input)[1] - 1
-            xnetwork_input = tf.slice(xnetwork_input, [0, 1, 0],[-1, -1, -1])
-            #xnetwork_input = tf.slice(xnetwork_input, [0, 0, 0],
-                                      #[-1, xnetwork_input_width, -1])
+            xinput_width = tf.shape(xnetwork_input)[1] - 1
+            #xnetwork_input = tf.slice(xnetwork_input, [0, 1, 0],[-1, -1, -1])
+            xnetwork_input = tf.slice(xnetwork_input, [0, 0, 0],[-1, xinput_width, -1])
                                        
 
             raw_output = self._create_network(xnetwork_input, gc_embedding)

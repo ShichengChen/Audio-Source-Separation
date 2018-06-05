@@ -1,5 +1,5 @@
 #my code is changed from https://github.com/ibab/tensorflow-wavenet
-
+#and https://github.com/soobinseo/wavenet
 
 
 # A TensorFlow implementation of DeepMind's WaveNet paper
