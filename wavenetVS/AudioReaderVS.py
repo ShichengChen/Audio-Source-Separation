@@ -220,12 +220,12 @@ class AudioReader(object):
         filename = ['./vsCorpus/origin_mix.wav','./vsCorpus/origin_vocal.wav']
         audio0, samplerate = sf.read(filename[0], dtype='float32')
         audio0 = librosa.resample(audio0.T, samplerate, self.sample_rate)
-        audio0 = audio0.reshape(-1, 1)[:self.sample_size*2,:]
-
+        audio0 = audio0.reshape(-1, 1)[:self.sample_size*4,:]
+        audio0 = np.pad(audio0, [[self.receptive_field, 0], [0, 0]],'constant')
+        
         audio1, samplerate = sf.read(filename[1], dtype='float32')
         audio1 = librosa.resample(audio1.T, samplerate, self.sample_rate)
-        audio1 = audio1.reshape(-1, 1)[:self.sample_size*2,:]
-        audio0 = np.pad(audio0, [[self.receptive_field, 0], [0, 0]],'constant')
+        audio1 = audio1.reshape(-1, 1)[:self.sample_size*4,:]
         audio1 = np.pad(audio1, [[self.receptive_field, 0], [0, 0]],'constant')
         assert(audio0.shape==audio1.shape)
         while not stop:
