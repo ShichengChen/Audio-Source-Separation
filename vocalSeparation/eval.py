@@ -2,6 +2,7 @@ from network import *
 from data_utils import *
 import hyperparams as hp
 import librosa
+import soundfile as sf
 
 class Graph:
     def __init__(self):
@@ -20,10 +21,14 @@ class Graph:
 def main():
 
     g = Graph()
-
-    mixture = librosa.load('./data/' + hp.test_data, sr=hp.sample_rate)[0]
+    
+    filename = ['./vsCorpus/pred_mix.wav','./vsCorpus/pred_vocal.wav']
+    mixture, samplerate = sf.read(filename[0], dtype='float32')
+    mixture = librosa.resample(audio0.T, samplerate, hp.sample_rate)
+    mixture = audio0.reshape(-1)
+    
     mixture_len = len(mixture) // hp.timestep
-    print mixture_len
+    print (mixture_len)
     mixture = np.expand_dims(mixture[:mixture_len * hp.timestep].reshape([-1,hp.timestep]),-1)
 
     with g.graph.as_default():
@@ -41,7 +46,7 @@ def main():
                 outputs.append(output)
 
             result = np.vstack(outputs).reshape(-1)
-            librosa.output.write_wav("./data/result.wav", result, sr=hp.sample_rate)
+            sf.write('./vsCorpus/result.wav',result,hp.sample_rate)
 
 if __name__ == '__main__':
     main()

@@ -91,7 +91,7 @@ def residual_block(input_, rate, scope="res"):
                               output_channels=input_dim // 2,
                               rate=rate,
                               name="gate_aconv")
-        aconv = tf.multiply(aconv_f, tf.sigmoid(aconv_g))
+        aconv = tf.multiply(tf.tanh(aconv_f), tf.sigmoid(aconv_g))
 
         skip_connection = conv1d(aconv,
                                  output_channels=input_dim,

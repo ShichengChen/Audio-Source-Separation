@@ -14,15 +14,6 @@ import soundfile as sf
 # In[15]:
 
 
-arrays=[]
-data = np.arange(10)
-timestep = 3
-lens = 3
-print((np.reshape(data[:timestep * lens],[-1, 3]).shape))
-print((np.expand_dims(np.reshape(data[:timestep * lens],[-1, 3]),-1)).shape)
-arrays.append(np.expand_dims(np.reshape(data[:timestep * lens],[-1, 3]),-1))
-arrays.append(np.expand_dims(np.reshape(data[:timestep * lens],[-1, 3]),-1))
-np.vstack(arrays).shape
 
 
 # In[19]:
