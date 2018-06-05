@@ -6,5 +6,5 @@ is_training = True
 use_mulaw = True
 batch_size = 1
 num_epochs = 10000
-save_dir = './logdirVS'
+save_dir = './logdir'
 test_data = 'test.wav'
