@@ -15,21 +15,12 @@ import numpy as np
 import torch.utils.data as utils
 import librosa
 import soundfile as sf
+import time
 
 
 # In[38]:
 
 
-parser = argparse.ArgumentParser(description='PyTorch vocal seqera Example')
-parser.add_argument('--momentum', type=float, default=0.5, metavar='M',
-                    help='SGD momentum (default: 0.5)')
-parser.add_argument('--no-cuda', action='store_true', default=False,
-                    help='disables CUDA training')
-parser.add_argument('--seed', type=int, default=1, metavar='S',
-                    help='random seed (default: 1)')
-parser.add_argument('--log-interval', type=int, default=10, metavar='N',
-                    help='how many batches to wait before logging training status')
-args = parser.parse_args([])
 sampleSize=100000
 sample_rate=16000
 quantization_channels=256
@@ -42,8 +33,8 @@ filterSize=3
 # In[39]:
 
 
-use_cuda = not args.no_cuda and torch.cuda.is_available()
-torch.manual_seed(args.seed)
+use_cuda = torch.cuda.is_available()
+torch.manual_seed(1)
 device = torch.device("cuda" if use_cuda else "cpu")
 device = 'cpu'
 kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
@@ -144,7 +135,7 @@ class Net(nn.Module):
 model = Net().to(device)
 
 #optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
-optimizer = optim.Adam(model.parameters())
+optimizer = optim.Adam(model.parameters(),weight_decay=1e-5)
 
 
 # In[60]:
@@ -154,6 +145,7 @@ def val():
     model.eval()
     test_loss = 0
     correct = 0
+    startval_time = time.time()
     with torch.no_grad():
         data, target = xval.to(device), yval.to(device)
         output = model(data)
@@ -162,8 +154,8 @@ def val():
         correct += pred.eq(target.view_as(pred)).sum().item()
 
     test_loss /= yval.shape[1]
-    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
-        test_loss, correct, yval.shape[1],100. * correct / yval.shape[1]))
+    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%) ({:.3f} sec/step)\n'.format(
+        test_loss, correct, yval.shape[1],100. * correct / yval.shape[1],time.time() - startval_time))
 
 
 def train(epoch):
@@ -171,6 +163,7 @@ def train(epoch):
     idx = np.arange(xtrain.shape[-1] - sampleSize)
     np.random.shuffle(idx)
     for i, ind in enumerate(idx):
+        start_time = time.time()
         x = xtrain[:,:,ind:ind+sampleSize]
         y = ytrain[:,ind:ind+sampleSize]
         data, target = x.to(device), y.to(device)
@@ -179,8 +172,8 @@ def train(epoch):
         loss = F.nll_loss(output, target)
         loss.backward()
         optimizer.step()
-        print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, i, len(idx),100. * i / len(idx), loss.item()))
+        print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f} , ({:.3f} sec/step)'.format(
+                epoch, i, len(idx),100. * i / len(idx), loss.item(),time.time() - start_time))
         if i % 100 == 0:val()
 
 
