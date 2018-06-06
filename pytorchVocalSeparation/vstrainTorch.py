@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[37]:
+# In[1]:
 
 
 from __future__ import print_function
@@ -18,7 +18,7 @@ import soundfile as sf
 import time
 
 
-# In[38]:
+# In[2]:
 
 
 sampleSize=100000
@@ -30,17 +30,18 @@ residualDim=32
 filterSize=3
 
 
-# In[39]:
+# In[3]:
 
 
 use_cuda = torch.cuda.is_available()
 torch.manual_seed(1)
 device = torch.device("cuda" if use_cuda else "cpu")
-device = 'cpu'
+#device = 'cpu'
+torch.set_default_tensor_type('torch.cuda.FloatTensor')
 kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
 
 
-# In[40]:
+# In[4]:
 
 
 def mu_law_encode(audio, quantization_channels=quantization_channels):
@@ -65,7 +66,7 @@ def mu_law_decode(output, quantization_channels=quantization_channels):
     return np.sign(signal) * magnitude
 
 
-# In[41]:
+# In[5]:
 
 
 def readAudio(name):
@@ -79,27 +80,22 @@ xtrain,xval,xtest=xtrain.reshape(1,1,-1),xval.reshape(1,1,-1),xtest.reshape(1,1,
 ytrain,yval=ytrain.reshape(1,-1),yval.reshape(1,-1)
 
 
-# In[42]:
+# In[6]:
 
 
 xtrain=(xtrain-xtrain.mean())/xtrain.std()
 xval=(xval-xtrain.mean())/xtrain.std()
 xtest=(xtest-xtrain.mean())/xtrain.std()
+ytrain,yval=mu_law_encode(ytrain),mu_law_encode(yval)
 
 
-# In[43]:
-
-
-xtrain,ytrain,xval,yval,xtest=xtrain,mu_law_encode(ytrain),xval,mu_law_encode(yval),xtest
-
-
-# In[44]:
+# In[7]:
 
 
 xtrain,ytrain,xval,yval,xtest = torch.from_numpy(xtrain).type(torch.float32),                                torch.from_numpy(ytrain).type(torch.LongTensor),                                torch.from_numpy(xval).type(torch.float32),                                torch.from_numpy(yval).type(torch.LongTensor),                                torch.from_numpy(xtest).type(torch.float32)
 
 
-# In[46]:
+# In[9]:
 
 
 class Net(nn.Module):
@@ -121,7 +117,8 @@ class Net(nn.Module):
         x = self.causal(x)
         skip_connections = torch.zeros([1,skipDim,x.shape[2]], dtype=torch.float32)
         for i, dilation in enumerate(dilations):
-            xinput=x.clone()      
+            xinput=x.clone()
+            #print(x.shape)
             x1 = self.tanh(self.dilated['tanh'+str(i)](x))
             x2 = self.sigmoid(self.dilated['sigmoid'+str(i)](x))
             x = x1*x2
@@ -138,7 +135,7 @@ model = Net().to(device)
 optimizer = optim.Adam(model.parameters(),weight_decay=1e-5)
 
 
-# In[60]:
+# In[ ]:
 
 
 def val():
@@ -164,9 +161,7 @@ def train(epoch):
     np.random.shuffle(idx)
     for i, ind in enumerate(idx):
         start_time = time.time()
-        x = xtrain[:,:,ind:ind+sampleSize]
-        y = ytrain[:,ind:ind+sampleSize]
-        data, target = x.to(device), y.to(device)
+        data, target = xtrain[:,:,ind:ind+sampleSize].to(device), ytrain[:,ind:ind+sampleSize].to(device)
         optimizer.zero_grad()
         output = model(data)
         loss = F.nll_loss(output, target)
