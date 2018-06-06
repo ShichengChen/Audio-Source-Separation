@@ -196,10 +196,9 @@ class AudioReader(object):
     
     def valbatch(self):
         stop = False
-        trainOrNot=False
-        if(trainOrNot):filename = ['./vsCorpus/origin_mix.wav','./vsCorpus/origin_vocal.wav']
-        else:filename = ['./vsCorpus/pred_mix.wav','./vsCorpus/pred_vocal.wav']
-        print('val',filename)
+        #filename = ['./vsCorpus/origin_mix.wav','./vsCorpus/origin_vocal.wav']
+        filename = ['./vsCorpus/pred_mix.wav','./vsCorpus/pred_vocal.wav']
+        #print('val',filename)
         audio0, samplerate = sf.read(filename[0], dtype='float32')
         audio0 = librosa.resample(audio0.T, samplerate, self.sample_rate)
         audio0 = audio0.reshape(-1, 1)
@@ -220,12 +219,12 @@ class AudioReader(object):
         filename = ['./vsCorpus/origin_mix.wav','./vsCorpus/origin_vocal.wav']
         audio0, samplerate = sf.read(filename[0], dtype='float32')
         audio0 = librosa.resample(audio0.T, samplerate, self.sample_rate)
-        audio0 = audio0.reshape(-1, 1)[:self.sample_size*3,:]
+        audio0 = audio0.reshape(-1, 1)
         audio0 = np.pad(audio0, [[self.receptive_field, 0], [0, 0]],'constant')
         
         audio1, samplerate = sf.read(filename[1], dtype='float32')
         audio1 = librosa.resample(audio1.T, samplerate, self.sample_rate)
-        audio1 = audio1.reshape(-1, 1)[:self.sample_size*3,:]
+        audio1 = audio1.reshape(-1, 1)
         audio1 = np.pad(audio1, [[self.receptive_field, 0], [0, 0]],'constant')
         assert(audio0.shape==audio1.shape)
         while not stop:
@@ -248,19 +247,19 @@ class AudioReader(object):
                 # sample_size with receptive_field overlap
                 #receptive_field=5117
                 lens = self.sample_size+self.receptive_field
-                startnum = np.arange(int((len(audio0)-lens)/lens))
-                #np.random.shuffle(startnum)
+                startnum = np.arange(len(audio0)-lens)
+                np.random.shuffle(startnum)
                 #print('train',startnum)
                 for i in startnum:
                     #print('trx',sess.run(self.trxqueue.size()))
                     #print('try',sess.run(self.tryqueue.size()))
                     #print('tr',filename)
-                    trxpiece = audio0[i*lens:(i+1)*lens, :].copy()#+np.random.randn(lens,1)*(1e-4)
-                    #trxpiece = np.pad(trxpiece, [[self.receptive_field, 0], [0, 0]],'constant')
+                    trxpiece = audio0[i:i+lens, :]+np.random.randn(lens,1)*(1e-5)
+                    trxpiece = np.pad(trxpiece, [[self.receptive_field, 0], [0, 0]],'constant')
                     sess.run(self.trxenqueue,feed_dict={self.trxsample_placeholder: trxpiece})
                      
-                    trypiece = audio1[i*lens:(i+1)*lens, :].copy()#+np.random.randn(lens,1)*(1e-4)  
-                    #trypiece = np.pad(trypiece, [[self.receptive_field, 0], [0, 0]],'constant')
+                    trypiece = audio1[i:i+lens, :]+np.random.randn(lens,1)*(1e-5)  
+                    trypiece = np.pad(trypiece, [[self.receptive_field, 0], [0, 0]],'constant')
                     sess.run(self.tryenqueue,feed_dict={self.trysample_placeholder: trypiece})
                         
                     if self.gc_enabled:

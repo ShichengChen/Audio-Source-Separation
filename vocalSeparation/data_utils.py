@@ -22,7 +22,7 @@ import soundfile as sf
 def get_rawwave(_input):
     audio0, samplerate = sf.read(_input, dtype='float32')
     audio0 = librosa.resample(audio0.T, samplerate, hp.sample_rate)
-    audio0 = audio0.reshape(-1)
+    audio0 = audio0.reshape(-1)#[:100000]
     return audio0
 
 def make_rawdata(is_training=True, name="data"):
@@ -41,9 +41,9 @@ def make_rawdata(is_training=True, name="data"):
     arrays_2.append(np.expand_dims(np.reshape(data_2[:hp.timestep * lens], 
                                                       [-1, hp.timestep]), -1))
     print (np.vstack(arrays).shape)
-    np.save("./mixtures.npy", np.vstack(arrays))
+    np.save("mixtures.npy", np.vstack(arrays))
 
-    np.save("./vocals.npy", np.vstack(arrays_2))
+    np.save("vocals.npy", np.vstack(arrays_2))
 
 def dataset_shuffling(x, y):
     shuffled_idx = np.arange(len(y))
