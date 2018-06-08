@@ -20,12 +20,12 @@ import os
 # In[2]:
 
 
-sampleSize = 50000
+sampleSize = 100000
 sample_rate = 16000
 quantization_channels = 256
-dilations = [2 ** i for i in range(10)] * 5
-skipDim = 256
-residualDim = 96
+dilations = [2 ** i for i in range(9)] * 5
+skipDim = 512
+residualDim = 32
 filterSize = 3
 pad = np.sum(dilations)
 shapeoftest = 190500
@@ -94,6 +94,7 @@ assert ((xtrain != ytrain).any())
 
 # In[7]:
 
+lenofxtrain =xtrain.shape[0]
 
 xmean, xstd = xtrain.mean(), xtrain.std()
 xtrain = (xtrain - xmean) / xstd
@@ -104,8 +105,6 @@ ytrain, yval = mu_law_encode(ytrain), mu_law_encode(yval)
 # In[8]:
 
 
-xtrain, ytrain = xtrain[:xtest.shape[0]], ytrain[:xtest.shape[0]]
-xval, yval = xval[:xtest.shape[0]], yval[:xtest.shape[0]]
 xtrain = np.pad(xtrain, (pad, pad), 'constant')
 xval = np.pad(xval, (pad, pad), 'constant')
 xtest = np.pad(xtest, (pad, pad), 'constant')
@@ -227,7 +226,7 @@ def train(epoch):
     model.train()
     # idx = np.arange(xtrain.shape[-1] - 2 * sampleSize,1000)
     # 176000
-    idx = np.arange(pad, shapeoftest + pad - sampleSize, 1000)
+    idx = np.arange(pad, xtrain.shape[-1] - pad - sampleSize, 1000)
     np.random.shuffle(idx)
     for i, ind in enumerate(idx):
         start_time = time.time()
