@@ -224,19 +224,20 @@ def test():
     model.eval()
     startval_time = time.time()
     with torch.no_grad():
-        output = model(xtest.to(device))
-        pred = output.max(1, keepdim=True)[1].cpu().numpy().reshape(-1)
-        ans = mu_law_decode(pred)
+        listofpred = []
+        for ind in range(pad, xtest.shape[-1] - pad, sampleSize):
+            output = model(xtest[:, :, ind - pad:ind + sampleSize + pad].to(device))
+            pred = output.max(1, keepdim=True)[1].cpu().numpy().reshape(-1)
+            listofpred.append(pred)
+        ans = mu_law_decode(np.concatenate(listofpred))
         sf.write('./vsCorpus/resultxte.wav', ans, sample_rate)
 
-        # output = model(xtrain[:,:,:sampleSize].to(device))
-        ind = pad
+
         listofpred=[]
-        while ind < xtrain.shape[-1]-pad:
+        for ind in range(pad,xtrain.shape[-1]-pad,sampleSize):
             output = model(xtrain[:, :, ind-pad:ind+sampleSize+pad].to(device))
             pred = output.max(1, keepdim=True)[1].cpu().numpy().reshape(-1)
             listofpred.append(pred)
-            ind += sampleSize
         ans = mu_law_decode(np.concatenate(listofpred))
         sf.write('./vsCorpus/resultxtr.wav', ans, sample_rate)
         print('stored done\n')
@@ -266,7 +267,7 @@ def train(epoch):
                 'state_dict': model.state_dict(),
                 'optimizer': optimizer.state_dict()}
             torch.save(state, resumefile)
-    val()
+    #val()
     test()
 
 
@@ -280,8 +281,6 @@ for epoch in range(100000):
         for s in lossrecord:
             f.write(str(s) +"\n")
     print('write finish')
-
-# In[20]:
 
 
 # torch.save(model, 'loss3.2step24h_repeat5*2**10resu96sample50000')
