@@ -25,11 +25,11 @@ sample_rate = 16000
 quantization_channels = 256
 # dilations=[2**i for i in range(8)]*20
 # "residualDim=32
-dilations = [2 ** i for i in range(9)] * 1
+dilations = [2 ** i for i in range(9)] * 5
 residualDim = 128
 skipDim = 512
 filterSize = 3
-shapeoftest = 190500
+shapeoftest = 190500    
 lossrecord = []
 initfilter=3
 resumefile='secondgithubhyperparameters'
@@ -40,7 +40,7 @@ pad=0
 
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 
 # In[4]:
@@ -233,7 +233,7 @@ def test():
             pred = output.max(1, keepdim=True)[1].cpu().numpy().reshape(-1)
             listofpred.append(pred)
         ans = mu_law_decode(np.concatenate(listofpred))
-        sf.write('./vsCorpus/resultxte.wav', ans, sample_rate)
+        sf.write('./vsCorpus/xte.wav', ans, sample_rate)
 
         listofpred=[]
         for ind in range(pad,xtrain.shape[-1]-pad,sampleSize):
@@ -241,7 +241,7 @@ def test():
             pred = output.max(1, keepdim=True)[1].cpu().numpy().reshape(-1)
             listofpred.append(pred)
         ans = mu_law_decode(np.concatenate(listofpred))
-        sf.write('./vsCorpus/resultxtr.wav', ans, sample_rate)
+        sf.write('./vsCorpus/xtr.wav', ans, sample_rate)
         print('stored done\n')
 
 
@@ -261,14 +261,14 @@ def train(epoch):
         print('Train Epoch: {} [{}/{} ({:.0f}%)] Loss:{:.6f}: , ({:.3f} sec/step)'.format(
                 epoch, i, len(idx),100. * i / len(idx), loss.item(),time.time() - start_time))
         if i % 100 == 0:
-            with open("./lossRecord/pycharmlossfile.txt", "w") as f:
+            with open("lossfile.txt", "w") as f:
                 for s in lossrecord:
                     f.write(str(s) +"\n")
             print('write finish')
             state={'epoch': epoch + 1,
                 'state_dict': model.state_dict(),
                 'optimizer': optimizer.state_dict()}
-            torch.save(state, 'newModifiedModel')
+            torch.save(state, 'heaviermodel')
     val()
     test()
 
