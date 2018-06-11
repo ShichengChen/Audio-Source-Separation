@@ -3,4 +3,5 @@ and https://github.com/soobinseo/waveneta
 
 Using pyTorch to implement the WaveNet for vocal separation
 
-![good loss](./lossRecord/goodloss.png)
+![better loss](./lossRecord/loss.png)
+
