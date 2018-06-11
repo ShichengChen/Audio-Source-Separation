@@ -29,11 +29,11 @@ dilations = [2 ** i for i in range(9)] * 5
 residualDim = 128
 skipDim = 512
 filterSize = 3
-shapeoftest = 190500    
+shapeoftest = 190500
 lossrecord = []
 initfilter=3
-resumefile='secondgithubhyperparameters'
-continueTrain=False
+resumefile='middlemodel'
+continueTrain=True
 pad = np.sum(dilations) + initfilter//2
 pad=0
 # In[3]:
@@ -197,7 +197,7 @@ if continueTrain:
         start_epoch = checkpoint['epoch']
         #best_prec1 = checkpoint['best_prec1']
         model.load_state_dict(checkpoint['state_dict'])
-        #optimizer.load_state_dict(checkpoint['optimizer'])
+        optimizer.load_state_dict(checkpoint['optimizer'])
         print("=> loaded checkpoint '{}' (epoch {})"
               .format(resumefile, checkpoint['epoch']))
     else:
@@ -211,7 +211,7 @@ def val():
     model.eval()
     startval_time = time.time()
     with torch.no_grad():
-        idx = np.arange(pad,xtrain.shape[-1]-pad-sampleSize,1000)
+        idx = np.arange(xtrain.shape[-1]-pad-10*sampleSize,xtrain.shape[-1]-pad-sampleSize,1000)
         np.random.shuffle(idx)
         data = xtrain[:,:,idx[0]-pad:pad+idx[0]+sampleSize].to(device)
         target = ytrain[:,idx[0]:idx[0]+sampleSize].to(device)
@@ -219,6 +219,14 @@ def val():
         pred = output.max(1, keepdim=True)[1]
         correct = pred.eq(target.view_as(pred)).sum().item() / pred.shape[-1]
         val_loss = criterion(output, target).item()
+
+        listofpred = []
+        for ind in range(xtrain.shape[-1]-pad-10*sampleSize,xtrain.shape[-1]-pad-sampleSize,sampleSize):
+            output = model(xtrain[:, :, ind - pad:ind + sampleSize + pad].to(device))
+            pred = output.max(1, keepdim=True)[1].cpu().numpy().reshape(-1)
+            listofpred.append(pred)
+        ans = mu_law_decode(np.concatenate(listofpred))
+        sf.write('./vsCorpus/xval.wav', ans, sample_rate)
     print(correct,'accurate')
     print('\nval set:loss{:.4f}:, ({:.3f} sec/step)\n'.format(val_loss,time.time()-startval_time))
 
@@ -247,7 +255,7 @@ def test():
 
 def train(epoch):
     model.train()
-    idx = np.arange(pad,xtrain.shape[-1]-pad-sampleSize,16000)
+    idx = np.arange(pad,xtrain.shape[-1]-pad-10*sampleSize,16000)
     np.random.shuffle(idx)
     for i, ind in enumerate(idx):
         start_time = time.time()
@@ -268,7 +276,7 @@ def train(epoch):
             state={'epoch': epoch + 1,
                 'state_dict': model.state_dict(),
                 'optimizer': optimizer.state_dict()}
-            torch.save(state, 'heaviermodel')
+            torch.save(state, resumefile)
     val()
     test()
 
