@@ -1,11 +1,13 @@
 my code is inspired by https://github.com/ibab/tensorflow-wavenet
 and https://github.com/soobinseo/wavenet
 
+WaveNet paper https://arxiv.org/pdf/1609.03499.pdf
+
 # Using pyTorch to implement the WaveNet for vocal separation
 # remove the background music from songs
 
   - vstrain.ipynb
-     - all the main code is in this file
+     - all the main code is in this file, you can see more comments on this file
   - plotLoss.ipynb
     - when you training the model, you can use this file to visualize model's loss trend 
     - babysit the model
@@ -44,10 +46,12 @@ and https://github.com/soobinseo/wavenet
 # Notice
  - if i set residual channel to 256, the loss will stuck into 4.5,(actually, loss returns from 3.5)
  - if you only padding zero on the two side of the audio, which is slightly worse than the result which you padding whenever you use cnn. I still do not understand
+ - if i set the number of cnn dilation layers to 100, the result is also not good. Maybe because two big padding area or two big receptive field
+ - if you design custom model, you should use self.convs = nn.ModuleList() instead of self.convs = dict(). If you use the latter way, the pytorch cannot update the weight in the dict() 
 
 # ToDo
  - better learning rate decay strategy, speed up the training process.
  - bigger dataset
  
+# Good loss image
 ![one of good loss image](./lossRecord/loss.png)
-
