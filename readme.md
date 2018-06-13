@@ -38,9 +38,11 @@ WaveNet paper https://arxiv.org/pdf/1609.03499.pdf
  - pred_mix.wav(test)
 
 # Result
-- bestResultonTestingSet.wav
-- bestResultonTrainingSet.wav
-- bestResultonValidation.wav
+- the model is trained on training set except for last 15 seconds
+- bestResultonTestingSet.wav (testing set)
+- bestResultonTrainingSet.wav (training set except for last 15 seconds)
+- bestResultonValidation.wav (last 15 seconds for training set)
+- there are still some noise and a little music on audios on validation and testing set
 - there are still some noise and a little music on audios on validation and testing set
 
 # Loss
