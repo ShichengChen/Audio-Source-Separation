@@ -24,7 +24,7 @@ class Dataset(data.Dataset):
         namey = self.listy[index]
         x, samplerate = sf.read(self.rootx+str(namex)+'.wav', dtype='float32')
         x=librosa.resample(x.T, samplerate, sample_rate)
-        x = librosa.to_mono(x)
+        x = librosa.to_mono(x) # read audio and transfrom from stereo to to mono
         
         y, samplerate = sf.read(self.rooty+str(namey)+'.wav', dtype='float32')
         y=librosa.resample(y.T, samplerate, sample_rate)
@@ -34,7 +34,7 @@ class Dataset(data.Dataset):
         #x=(x-xmean)/xstd
         #y=(y-ymean)/ystd
         
-        x=x_mu_law_encode(x).reshape(1,-1)
+        x=x_mu_law_encode(x).reshape(1,-1) # use mu_law to encode the audio
         y=y_mu_law_encode(y).reshape(-1)
         
         

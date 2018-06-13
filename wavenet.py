@@ -17,6 +17,7 @@ class Wavenet(nn.Module):
         self.denseconvs = nn.ModuleList()
         for i, d in enumerate(dilations):
             if(pad==0):
+                #if do not have padding at the begin, when i use 1d_cnn, i need to padding for dilation
                 self.tanhconvs.append(nn.Conv1d(in_channels=rd,out_channels=rd,kernel_size=3,padding=d,dilation=d))
             else:
                 self.tanhconvs.append(nn.Conv1d(in_channels=rd,out_channels=rd,kernel_size=3,padding=0,dilation=d))
@@ -39,8 +40,8 @@ class Wavenet(nn.Module):
         for i, d in enumerate(self.dilations):
             if(self.pad==0):xinput = x.clone()
             else:xinput = x.clone()[:,:,d:-d]
-            
             #when you do 1d cnn with dilation, and you do not padding, you need to do this
+            
             x1 = self.tanh(self.tanhconvs[i](x))
             x2 = self.sigmoid(self.sigmoidconvs[i](x))
             x = x1*x2
