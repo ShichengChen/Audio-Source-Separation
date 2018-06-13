@@ -3,3 +3,7 @@ VCTK-Corpus/
 *.pyc
 vsCorpus/ans/
 model/
+*.zip
+ccmixter_corpus/*
+ccmixter/*
+ccmix/*

@@ -8,12 +8,24 @@ WaveNet paper https://arxiv.org/pdf/1609.03499.pdf
 
   - vstrain.ipynb
      - all the main code is in this file, you can see more comments on this file
+  - readDataset.py
+    - custom dataset class inherit from pytorch
+  - transformData.py 
+    - provides mu_law encode and decode functions
+  - wavenet.py
+    - structure of wavenet
+  - clean_ccmixter_corpus.ipynb
+     - transform ccmixter from (audio time series, either stereo or mono) to mono
+  - clean_ccmixter_corpus2.ipynb
+     - transform ccmixter from (audio time series, either stereo or mono) to mono 
+  - vstrainBiggerDataset.ipynb
+    - train the model on ccmixter, ongoing task  
   - plotLoss.ipynb
     - when you training the model, you can use this file to visualize model's loss trend 
     - babysit the model
   - playTorch.ipynb
     - just begin to learn pytorch, try some functions
-  - vsFromTwoFile.ipynb
+  - useAandBsimultaneously.ipynb
     - ongoing task, use other method to remove the music from songs
   - vsCorpus
     - training set, testing set and some results 
@@ -55,3 +67,4 @@ WaveNet paper https://arxiv.org/pdf/1609.03499.pdf
  
 # Good loss image
 ![one of good loss image](./lossRecord/loss.png)
+
