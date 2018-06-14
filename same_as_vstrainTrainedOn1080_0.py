@@ -28,12 +28,13 @@ sampleSize = 32000  # the length of the sample size
 quantization_channels = 256
 sample_rate = 16000
 dilations = [2 ** i for i in range(9)] * 5  # idea from wavenet, have more receptive field
-residualDim = 128  #
+residualDim = 168  #
 skipDim = 512
 shapeoftest = 190500
 filterSize = 3
-resumefile = '10801'  # name of checkpoint
-lossname = '10801loss.txt'  # name of loss file
+audioname='10800val.wav'
+resumefile = '10800'  # name of checkpoint
+lossname = '10800loss.txt'  # name of loss file
 continueTrain = False  # whether use checkpoint
 pad = np.sum(dilations)  # padding for dilate convolutional layers
 lossrecord = []  # list for record loss
@@ -61,8 +62,8 @@ kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
 
 params = {'batch_size': 1, 'shuffle': True, 'num_workers': 2}
 
-training_set = Dataset(np.arange(0, 45), np.arange(0, 45), 'ccmixter/x/', 'ccmixter/y/')
-validation_set = Dataset(np.arange(45, 50), np.arange(45, 50), 'ccmixter/x/', 'ccmixter/y/')
+training_set = Dataset(np.arange(0, 2), np.arange(0, 2), 'ccmixter/x/', 'ccmixter/y/')
+validation_set = Dataset(np.arange(0, 2), np.arange(0, 2), 'ccmixter/x/', 'ccmixter/y/')
 loadtr = data.DataLoader(training_set, **params)
 loadval = data.DataLoader(validation_set, **params)
 
@@ -122,14 +123,14 @@ def val():  # validation set
                 pred = output.max(1, keepdim=True)[1].cpu().numpy().reshape(-1)
                 listofpred.append(pred)
             ans = mu_law_decode(np.concatenate(listofpred))
-            sf.write('./vsCorpus/noteval.wav', ans, sample_rate)
+            sf.write('./vsCorpus/'+audioname, ans, sample_rate)
             break
 
 
 def train(epoch):  # training set
     model.train()
     for iloader, (xtrain, ytrain) in enumerate(loadtr):
-        idx = np.arange(pad, xtrain.shape[-1] - pad - sampleSize, 16000)
+        idx = np.arange(pad, xtrain.shape[-1] - pad - sampleSize, 4000)
         np.random.shuffle(idx)  # random the starting points
         for i, ind in enumerate(idx):
             start_time = time.time()
