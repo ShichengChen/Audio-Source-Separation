@@ -129,7 +129,7 @@ def val():  # validation set
 def train(epoch):  # training set
     model.train()
     for iloader, (xtrain, ytrain) in enumerate(loadtr):
-        idx = np.arange(pad, xtrain.shape[-1] - pad-sampleSize, 16000)
+        idx = np.arange(pad, xtrain.shape[-1] - pad - sampleSize, 16000)
         np.random.shuffle(idx)  # random the starting points
         for i, ind in enumerate(idx):
             start_time = time.time()
@@ -152,7 +152,7 @@ def train(epoch):  # training set
                          'state_dict': model.state_dict(),
                          'optimizer': optimizer.state_dict()}
                 # torch.save(state, './model/'+resumefile)
-        xval()
+        val()
 
 
 # In[ ]:
