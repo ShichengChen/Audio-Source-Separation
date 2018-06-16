@@ -24,7 +24,7 @@ from readDataset import Dataset
 # In[ ]:
 
 
-sampleSize = 16000  # the length of the sample size
+sampleSize = 32000  # the length of the sample size
 quantization_channels = 256
 sample_rate = 16000
 dilations = [2 ** i for i in range(9)] * 5  # idea from wavenet, have more receptive field
@@ -130,7 +130,7 @@ def val():  # validation set
 def train(epoch):  # training set
     model.train()
     for iloader, (xtrain, ytrain) in enumerate(loadtr):
-        idx = np.arange(pad, xtrain.shape[-1] - pad - sampleSize, 8000)
+        idx = np.arange(pad, xtrain.shape[-1] - pad - sampleSize, 16000)
         np.random.shuffle(idx)  # random the starting points
         for i, ind in enumerate(idx):
             start_time = time.time()
