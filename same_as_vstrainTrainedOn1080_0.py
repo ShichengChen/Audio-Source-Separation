@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
 
 
 from __future__ import print_function
@@ -21,53 +21,61 @@ from wavenet import Wavenet
 from transformData import x_mu_law_encode, y_mu_law_encode, mu_law_decode, onehot, cateToSignal
 from readDataset import Dataset
 
-# In[ ]:
+# In[2]:
 
 
 sampleSize = 32000  # the length of the sample size
 quantization_channels = 256
 sample_rate = 16000
 dilations = [2 ** i for i in range(9)] * 5  # idea from wavenet, have more receptive field
-residualDim = 168  #
+residualDim = 128  #
 skipDim = 512
 shapeoftest = 190500
 filterSize = 3
-audioname='10800val.wav'
-resumefile = './model/10800'  # name of checkpoint
-lossname = '10800loss.txt'  # name of loss file
+resumefile = './model/instrument'  # name of checkpoint
+lossname = 'instrumentloss.txt'  # name of loss file
 continueTrain = False  # whether use checkpoint
 pad = np.sum(dilations)  # padding for dilate convolutional layers
 lossrecord = []  # list for record loss
-pad=0
+# pad=0
 
 
-# In[ ]:
+#     #            |----------------------------------------|     *residual*
+#     #            |                                        |
+#     #            |    |-- conv -- tanh --|                |
+#     # -> dilate -|----|                  * ----|-- 1x1 -- + -->	*input*
+#     #                 |-- conv -- sigm --|     |    ||
+#     #                                         1x1=residualDim
+#     #                                          |
+#     # ---------------------------------------> + ------------->	*skip=skipDim*
+#     image changed from https://github.com/vincentherrmann/pytorch-wavenet/blob/master/wavenet_model.py
+
+# In[3]:
 
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # use specific GPU
 
+# In[4]:
 
-# In[ ]:
 
-
-use_cuda = torch.cuda.is_available()
+use_cuda = torch.cuda.is_available()  # whether have available GPU
 torch.manual_seed(1)
 device = torch.device("cuda" if use_cuda else "cpu")
-# torch.set_default_tensor_type('torch.cuda.FloatTensor')
+# device = 'cpu'
+# torch.set_default_tensor_type('torch.cuda.FloatTensor') #set_default_tensor_type as cuda tensor
 kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
 
-# In[ ]:
+# In[5]:
 
 
-params = {'batch_size': 1, 'shuffle': True, 'num_workers': 2}
-
-training_set = Dataset(np.arange(0, 2), np.arange(0, 2), 'ccmixter2/x/', 'ccmixter2/y/')
-validation_set = Dataset(np.arange(0, 2), np.arange(0, 2), 'ccmixter2/x/', 'ccmixter2/y/')
-loadtr = data.DataLoader(training_set, **params)
+params = {'batch_size': 1, 'shuffle': True, 'num_workers': 1}
+training_set = Dataset(np.arange(0, 30), np.arange(0, 30), 'ccmixter2/x/', 'ccmixter2/y/')
+validation_set = Dataset(np.arange(0, 30), np.arange(0, 30), 'ccmixter2/x/', 'ccmixter2/y/')
+loadtr = data.DataLoader(training_set, **params)  # pytorch dataloader, more faster than mine
 loadval = data.DataLoader(validation_set, **params)
 
-# In[ ]:
+# In[6]:
 
 
 model = Wavenet(pad, skipDim, quantization_channels, residualDim, dilations).cuda()
@@ -81,7 +89,7 @@ optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
 # scheduler = MultiStepLR(optimizer, milestones=[20,40], gamma=0.1)
 
 
-# In[ ]:
+# In[7]:
 
 
 if continueTrain:  # if continueTrain, the program will find the checkpoints
@@ -98,40 +106,32 @@ if continueTrain:  # if continueTrain, the program will find the checkpoints
         print("=> no checkpoint found at '{}'".format(resumefile))
 
 
-# In[ ]:
+# In[9]:
 
 
-def val():  # validation set
+def test(xtrain):  # testing data
     model.eval()
-    startval_time = time.time()
+    start_time = time.time()
     with torch.no_grad():
-        for iloader, (xtrain, ytrain) in enumerate(loadval):
-            idx = np.arange(pad, xtrain.shape[-1] - pad - sampleSize, 1000)
-            np.random.shuffle(idx)
-            data = xtrain[:, :, idx[0] - pad:pad + idx[0] + sampleSize].to(device)
-            target = ytrain[:, idx[0]:idx[0] + sampleSize].to(device)
-            output = model(data)
-            pred = output.max(1, keepdim=True)[1]
-            correct = pred.eq(target.view_as(pred)).sum().item() / pred.shape[-1]
-            val_loss = criterion(output, target).item()
-            print(correct, 'accurate')
-            print('\nval set:loss{:.4f}:, ({:.3f} sec/step)\n'.format(val_loss, time.time() - startval_time))
-
+        for iloader, (xtest, _) in enumerate(loadval):
             listofpred = []
-            for ind in range(pad, xtrain.shape[-1] - pad - sampleSize, sampleSize):
+            for ind in range(pad, xtrain.shape[-1] - pad, sampleSize):
                 output = model(xtrain[:, :, ind - pad:ind + sampleSize + pad].to(device))
                 pred = output.max(1, keepdim=True)[1].cpu().numpy().reshape(-1)
                 listofpred.append(pred)
             ans = mu_law_decode(np.concatenate(listofpred))
-            sf.write('./vsCorpus/'+audioname, ans, sample_rate)
+            sf.write('./vsCorpus/nus1xtr.wav', ans, sample_rate)
+            print('test stored done', time.time() - start_time)
             break
 
 
-def train(epoch):  # training set
+def train(epoch):  # training data, the audio except for last 15 seconds
     model.train()
     for iloader, (xtrain, ytrain) in enumerate(loadtr):
-        idx = np.arange(pad, xtrain.shape[-1] - pad - sampleSize, 16000)
+        idx = np.arange(pad, xtrain.shape[-1] - pad - sampleSize, 4000)
         np.random.shuffle(idx)  # random the starting points
+        lens = idx.shape[-1] // 30
+        idx = idx[:lens]
         for i, ind in enumerate(idx):
             start_time = time.time()
             data, target = xtrain[:, :, ind - pad:ind + sampleSize + pad].to(device), ytrain[:,
@@ -149,12 +149,13 @@ def train(epoch):  # training set
                     for s in lossrecord:
                         f.write(str(s) + "\n")
                 print('write finish')
-                state = {'epoch': epoch + 1,
-                         'state_dict': model.state_dict(),
-                         'optimizer': optimizer.state_dict()}
-                if not os.path.exists('./model/'): os.makedirs('./model/')
-                torch.save(state, resumefile)
-        val()
+
+        test(xtrain)
+        state = {'epoch': epoch + 1,
+                 'state_dict': model.state_dict(),
+                 'optimizer': optimizer.state_dict()}
+        if not os.path.exists('./model/'): os.makedirs('./model/')
+        torch.save(state, resumefile)
 
 
 # In[ ]:
