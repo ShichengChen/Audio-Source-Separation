@@ -24,7 +24,7 @@ from readDataset import Dataset
 # In[ ]:
 
 
-sampleSize = 32000  # the length of the sample size
+sampleSize = 16000  # the length of the sample size
 quantization_channels = 256
 sample_rate = 16000
 dilations = [2 ** i for i in range(9)] * 5  # idea from wavenet, have more receptive field
@@ -33,12 +33,12 @@ skipDim = 512
 shapeoftest = 190500
 filterSize = 3
 audioname='10801val.wav'
-resumefile = '10801'  # name of checkpoint
+resumefile = './model/10801'  # name of checkpoint
 lossname = '10801loss.txt'  # name of loss file
 continueTrain = False  # whether use checkpoint
 pad = np.sum(dilations)  # padding for dilate convolutional layers
 lossrecord = []  # list for record loss
-pad=0
+#pad=0
 
 
 # In[ ]:
@@ -60,10 +60,10 @@ kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
 # In[ ]:
 
 
-params = {'batch_size': 1, 'shuffle': True, 'num_workers': 2}
+params = {'batch_size': 1, 'shuffle': True, 'num_workers': 1}
 
-training_set = Dataset(np.arange(0, 1), np.arange(0, 1), 'ccmixter/x/', 'ccmixter/y/')
-validation_set = Dataset(np.arange(0, 1), np.arange(0, 1), 'ccmixter/x/', 'ccmixter/y/')
+training_set = Dataset(np.arange(0, 1), np.arange(0, 1), 'ccmixter2/x/', 'ccmixter2/y/')
+validation_set = Dataset(np.arange(0, 1), np.arange(0, 1), 'ccmixter2/x/', 'ccmixter2/y/')
 loadtr = data.DataLoader(training_set, **params)
 loadval = data.DataLoader(validation_set, **params)
 
@@ -152,7 +152,8 @@ def train(epoch):  # training set
                 state = {'epoch': epoch + 1,
                          'state_dict': model.state_dict(),
                          'optimizer': optimizer.state_dict()}
-                # torch.save(state, './model/'+resumefile)
+                if not os.path.exists('./model/'): os.makedirs('./model/')
+                torch.save(state, resumefile)
         val()
 
 

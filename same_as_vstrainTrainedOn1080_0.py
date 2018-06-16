@@ -33,7 +33,7 @@ skipDim = 512
 shapeoftest = 190500
 filterSize = 3
 audioname='10800val.wav'
-resumefile = '10800'  # name of checkpoint
+resumefile = './model/10800'  # name of checkpoint
 lossname = '10800loss.txt'  # name of loss file
 continueTrain = False  # whether use checkpoint
 pad = np.sum(dilations)  # padding for dilate convolutional layers
@@ -62,8 +62,8 @@ kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
 
 params = {'batch_size': 1, 'shuffle': True, 'num_workers': 2}
 
-training_set = Dataset(np.arange(0, 2), np.arange(0, 2), 'ccmixter/x/', 'ccmixter/y/')
-validation_set = Dataset(np.arange(0, 2), np.arange(0, 2), 'ccmixter/x/', 'ccmixter/y/')
+training_set = Dataset(np.arange(0, 2), np.arange(0, 2), 'ccmixter2/x/', 'ccmixter2/y/')
+validation_set = Dataset(np.arange(0, 2), np.arange(0, 2), 'ccmixter2/x/', 'ccmixter2/y/')
 loadtr = data.DataLoader(training_set, **params)
 loadval = data.DataLoader(validation_set, **params)
 
@@ -130,7 +130,7 @@ def val():  # validation set
 def train(epoch):  # training set
     model.train()
     for iloader, (xtrain, ytrain) in enumerate(loadtr):
-        idx = np.arange(pad, xtrain.shape[-1] - pad - sampleSize, 4000)
+        idx = np.arange(pad, xtrain.shape[-1] - pad - sampleSize, 32000)
         np.random.shuffle(idx)  # random the starting points
         for i, ind in enumerate(idx):
             start_time = time.time()
@@ -152,7 +152,8 @@ def train(epoch):  # training set
                 state = {'epoch': epoch + 1,
                          'state_dict': model.state_dict(),
                          'optimizer': optimizer.state_dict()}
-                # torch.save(state, './model/'+resumefile)
+                if not os.path.exists('./model/'): os.makedirs('./model/')
+                torch.save(state, resumefile)
         val()
 
 
