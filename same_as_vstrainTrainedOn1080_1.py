@@ -38,7 +38,7 @@ lossname = '10801loss.txt'  # name of loss file
 continueTrain = False  # whether use checkpoint
 pad = np.sum(dilations)  # padding for dilate convolutional layers
 lossrecord = []  # list for record loss
-#pad=0
+pad=0
 
 
 # In[ ]:
