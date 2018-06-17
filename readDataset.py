@@ -37,7 +37,7 @@ class Dataset(data.Dataset):
         xmean=x.mean()
         xstd=x.std()
         x=(x-xmean)/xstd
-        #x+=np.random.normal(size=x.shape[-1])*(1e-3)
+        x+=np.random.normal(size=x.shape[-1])*(1e-3)
         
         x=torch.from_numpy(x).type(torch.float32)
         y=torch.from_numpy(y).type(torch.LongTensor)

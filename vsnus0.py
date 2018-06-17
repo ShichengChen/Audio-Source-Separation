@@ -26,10 +26,10 @@ from readDataset import Dataset
 # In[2]:
 
 
-sampleSize=32000#the length of the sample size
+sampleSize=16000#the length of the sample size
 quantization_channels=256
 sample_rate=16000
-dilations=[2**i for i in range(9)]*5  #idea from wavenet, have more receptive field
+dilations=[2**i for i in range(9)]*7  #idea from wavenet, have more receptive field
 residualDim=128 #
 skipDim=512
 shapeoftest = 190500
@@ -134,9 +134,9 @@ def test(xtrain,iloader):  # testing data
 def train(epoch):#training data, the audio except for last 15 seconds
     model.train()
     for iloader,(xtrain,ytrain) in enumerate(loadtr):
-        idx = np.arange(pad,xtrain.shape[-1]-pad-sampleSize,3000)
+        idx = np.arange(pad,xtrain.shape[-1]-pad-sampleSize,1000)
         np.random.shuffle(idx)#random the starting points
-        idx=idx[:70]
+        idx=idx[:100]
         for i, ind in enumerate(idx):
             start_time = time.time()
             data, target = xtrain[:,:,ind-pad:ind+sampleSize+pad].to(device), ytrain[:,ind:ind+sampleSize].to(device)
