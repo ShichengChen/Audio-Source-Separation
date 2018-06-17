@@ -30,14 +30,14 @@ class Dataset(data.Dataset):
         y=librosa.resample(y.T, samplerate, sample_rate)
         y = librosa.to_mono(y)
         
-        xmean=-0.00096292931225207214
-        xstd=0.14421581879258155
-        x=(x-xmean)/xstd
-        x+=np.random.normal(size=x.shape[-1])*(1e-4)
         
         x=x_mu_law_encode(x).reshape(1,-1) # use mu_law to encode the audio
         y=y_mu_law_encode(y).reshape(-1)
         
+        xmean=x.mean()
+        xstd=x.std()
+        x=(x-xmean)/xstd
+        #x+=np.random.normal(size=x.shape[-1])*(1e-3)
         
         x=torch.from_numpy(x).type(torch.float32)
         y=torch.from_numpy(y).type(torch.LongTensor)

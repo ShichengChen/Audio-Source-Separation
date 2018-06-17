@@ -28,10 +28,12 @@ sampleSize = 32000  # the length of the sample size
 quantization_channels = 256
 sample_rate = 16000
 dilations = [2 ** i for i in range(9)] * 5  # idea from wavenet, have more receptive field
-residualDim = 128  #
+residualDim = 168  #
 skipDim = 512
 shapeoftest = 190500
+songnum=20
 filterSize = 3
+savemusic='./vsCorpus/nus2xtr{}.wav'
 resumefile = './model/instrument2'  # name of checkpoint
 lossname = 'instrument2loss.txt'  # name of loss file
 continueTrain = False  # whether use checkpoint
@@ -70,8 +72,8 @@ kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
 
 
 params = {'batch_size': 1, 'shuffle': True, 'num_workers': 1}
-training_set = Dataset(np.arange(0, 20), np.arange(0, 20), 'ccmixter2/x/', 'ccmixter2/y/')
-validation_set = Dataset(np.arange(0, 20), np.arange(0, 20), 'ccmixter2/x/', 'ccmixter2/y/')
+training_set = Dataset(np.arange(0, songnum), np.arange(0, songnum), 'ccmixter2/x/', 'ccmixter2/y/')
+validation_set = Dataset(np.arange(0, songnum), np.arange(0, songnum), 'ccmixter2/x/', 'ccmixter2/y/')
 loadtr = data.DataLoader(training_set, **params)  # pytorch dataloader, more faster than mine
 loadval = data.DataLoader(validation_set, **params)
 
@@ -109,28 +111,27 @@ if continueTrain:  # if continueTrain, the program will find the checkpoints
 # In[9]:
 
 
-def test(xtrain):  # testing data
+def test(xtrain,iloader):  # testing data
     model.eval()
     start_time = time.time()
     with torch.no_grad():
-        for iloader, (xtest, _) in enumerate(loadval):
-            listofpred = []
-            for ind in range(pad, xtrain.shape[-1] - pad, sampleSize):
-                output = model(xtrain[:, :, ind - pad:ind + sampleSize + pad].to(device))
-                pred = output.max(1, keepdim=True)[1].cpu().numpy().reshape(-1)
-                listofpred.append(pred)
-            ans = mu_law_decode(np.concatenate(listofpred))
-            sf.write('./vsCorpus/nus2xtr.wav', ans, sample_rate)
-            print('test stored done', time.time() - start_time)
-            break
+        #for iloader, (xtest, _) in enumerate(loadval):
+        listofpred = []
+        for ind in range(pad, xtrain.shape[-1] - pad, sampleSize):
+            output = model(xtrain[:, :, ind - pad:ind + sampleSize + pad].to(device))
+            pred = output.max(1, keepdim=True)[1].cpu().numpy().reshape(-1)
+            listofpred.append(pred)
+        ans = mu_law_decode(np.concatenate(listofpred))
+        sf.write(savemusic.format(iloader), ans, sample_rate)
+        print('test stored done', time.time() - start_time)
 
 
 def train(epoch):  # training data, the audio except for last 15 seconds
     model.train()
     for iloader, (xtrain, ytrain) in enumerate(loadtr):
-        idx = np.arange(pad, xtrain.shape[-1] - pad - sampleSize, 4000)
+        idx = np.arange(pad, xtrain.shape[-1] - pad - sampleSize, 2000)
         np.random.shuffle(idx)
-        lens = idx.shape[-1] // 20
+        lens = idx.shape[-1] // songnum
         idx = idx[:lens]
         for i, ind in enumerate(idx):
             start_time = time.time()
@@ -150,7 +151,7 @@ def train(epoch):  # training data, the audio except for last 15 seconds
                         f.write(str(s) + "\n")
                 print('write finish')
 
-        test(xtrain)
+        test(xtrain,iloader)
         state = {'epoch': epoch + 1,
                  'state_dict': model.state_dict(),
                  'optimizer': optimizer.state_dict()}
