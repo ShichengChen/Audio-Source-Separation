@@ -39,6 +39,9 @@ class Dataset(data.Dataset):
         x=(x-xmean)/xstd
         x+=np.random.normal(size=x.shape[-1])*(1e-3)
         
+        #lensofran=np.random.uniform(0.25,0.5)
+        #startpoint=np.random.uniform(0,1-lensofran),
+        #step=np.random.uniform(-0.5,0.5)
         x=torch.from_numpy(x).type(torch.float32)
         y=torch.from_numpy(y).type(torch.LongTensor)
         return x, y

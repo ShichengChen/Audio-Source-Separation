@@ -136,7 +136,7 @@ def train(epoch):#training data, the audio except for last 15 seconds
     for iloader,(xtrain,ytrain) in enumerate(loadtr):
         idx = np.arange(pad,xtrain.shape[-1]-pad-sampleSize,1000)
         np.random.shuffle(idx)
-        idx=idx[:1000]
+        idx=idx[:100]
         for i, ind in enumerate(idx):
             start_time = time.time()
             data, target = xtrain[:,:,ind-pad:ind+sampleSize+pad].to(device), ytrain[:,ind:ind+sampleSize].to(device)
