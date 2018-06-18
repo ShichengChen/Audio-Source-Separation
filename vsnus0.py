@@ -19,7 +19,7 @@ import os
 from torch.utils import data
 from wavenet import Wavenet
 from transformData import x_mu_law_encode, y_mu_law_encode, mu_law_decode, onehot, cateToSignal
-from readDataset2 import Dataset
+from readDataset2 import Dataset,Testset
 
 # In[2]:
 
@@ -67,16 +67,13 @@ torch.manual_seed(1)
 device = torch.device("cuda" if use_cuda else "cpu")
 # device = 'cpu'
 # torch.set_default_tensor_type('torch.cuda.FloatTensor') #set_default_tensor_type as cuda tensor
-kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
-
-# In[5]:
 
 
-params = {'batch_size': 2, 'shuffle': True, 'num_workers': 1}
+
 training_set = Dataset(np.arange(0, songnum), np.arange(0, songnum), 'ccmixter2/x/', 'ccmixter2/y/')
-validation_set = Dataset(np.arange(0, songnum), np.arange(0, songnum), 'ccmixter2/x/', 'ccmixter2/y/')
-loadtr = data.DataLoader(training_set, **params)  # pytorch dataloader, more faster than mine
-loadval = data.DataLoader(validation_set, **params)
+validation_set = Testset(np.arange(0, songnum), 'ccmixter2/x/')
+loadtr = data.DataLoader(training_set, batch_size=2,shuffle=True,num_workers=6)  # pytorch dataloader, more faster than mine
+loadval = data.DataLoader(validation_set,batch_size=1,num_workers=6)
 
 # In[6]:
 
@@ -86,12 +83,8 @@ model = nn.DataParallel(model)
 model = model.cuda()
 criterion = nn.CrossEntropyLoss()
 # in wavenet paper, they said crossentropyloss is far better than MSELoss
-# optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
 optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
 # use adam to train
-# optimizer = optim.SGD(model.parameters(), lr = 0.1, momentum=0.9, weight_decay=1e-5)
-# scheduler = StepLR(optimizer, step_size=30, gamma=0.1)
-# scheduler = MultiStepLR(optimizer, milestones=[20,40], gamma=0.1)
 
 
 # In[7]:
@@ -114,11 +107,11 @@ if continueTrain:  # if continueTrain, the program will find the checkpoints
 # In[9]:
 
 
-def test(xtrain, iloader):  # testing data
+def test():  # testing data
     model.eval()
     start_time = time.time()
     with torch.no_grad():
-        for iloader, (xtrain, ytrain) in enumerate(loadval):
+        for iloader, xtrain in enumerate(loadval):
             listofpred = []
             for ind in range(pad, xtrain.shape[-1] - pad, sampleSize):
                 output = model(xtrain[:, :, ind - pad:ind + sampleSize + pad].to(device))
@@ -144,7 +137,7 @@ def train(epoch):  # training data, the audio except for last 15 seconds
         sampleCnt+=1
         print('Train Epoch: {} iloader:{} Loss:{:.6f}: , ({:.3f} sec/step)'.format(
             epoch, iloader, loss.item(), time.time() - start_time))
-        if sampleCnt % 10000 == 0 and sampleCnt > 0:
+        if sampleCnt % 3000 == 0 and sampleCnt > 0:
             for param in optimizer.param_groups:
                 param['lr'] *= 0.98
 
@@ -153,11 +146,11 @@ def train(epoch):  # training data, the audio except for last 15 seconds
             for s in lossrecord:
                 f.write(str(s) + "\n")
         print('write finish')
-        state = {'epoch': epoch + 1,
+        state = {'epoch': epoch,
                  'state_dict': model.state_dict(),
                  'optimizer': optimizer.state_dict()}
         torch.save(state, resumefile)
-        test(xtrain, iloader)
+        test()
 
 # In[ ]:
 

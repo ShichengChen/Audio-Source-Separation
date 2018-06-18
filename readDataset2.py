@@ -70,7 +70,6 @@ class Testset(data.Dataset):
     def __getitem__(self, index):
         'Generates one sample of data'
         namex = self.listx[index]
-        namey = self.listy[index]
         x, samplerate = sf.read(self.rootx + str(namex) + '.wav', dtype='float32')
         x = librosa.resample(x.T, samplerate, sample_rate)
         x = librosa.to_mono(x)  # read audio and transfrom from stereo to to mono
@@ -83,4 +82,4 @@ class Testset(data.Dataset):
         x = np.pad(x, (pad, pad), 'constant')
 
         x = torch.from_numpy(x.reshape(1, -1)).type(torch.float32)
-        return x, y
+        return x
