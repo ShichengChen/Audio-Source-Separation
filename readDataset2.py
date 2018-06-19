@@ -5,6 +5,7 @@ import librosa
 import soundfile as sf
 import numpy as np
 import torch
+import h5py
 
 dilations = [2 ** i for i in range(9)] * 7
 pad = np.sum(dilations)
@@ -13,11 +14,12 @@ sample_rate = 16000  # the length of audio for one second
 
 
 class Dataset(data.Dataset):
-    def __init__(self, listx, listy, rootx, rooty):
+    def __init__(self, listx, listy, rootx, rooty, transform=None):
         self.rootx = rootx
         self.rooty = rooty
         self.listx = listx
         self.listy = listy
+        self.transform = transform
 
     def __len__(self):
         'Denotes the total number of samples'
@@ -27,13 +29,9 @@ class Dataset(data.Dataset):
         'Generates one sample of data'
         namex = self.listx[index]
         namey = self.listy[index]
-        x, samplerate = sf.read(self.rootx + str(namex) + '.wav', dtype='float32')
-        x = librosa.resample(x.T, samplerate, sample_rate)
-        x = librosa.to_mono(x)  # read audio and transfrom from stereo to to mono
 
-        y, samplerate = sf.read(self.rooty + str(namey) + '.wav', dtype='float32')
-        y = librosa.resample(y.T, samplerate, sample_rate)
-        y = librosa.to_mono(y)
+        h5f = h5py.File('ccmixter3/' + str(namex) + '.h5', 'r')
+        x, y = h5f['x'][:], h5f['y'][:]
 
         x = x_mu_law_encode(x)  # use mu_law to encode the audio
         y = y_mu_law_encode(y)
@@ -44,7 +42,24 @@ class Dataset(data.Dataset):
         # x+=np.random.normal(size=x.shape[-1])*(1e-3)
         x = np.pad(x, (pad, pad), 'constant')
         y = np.pad(y, (pad, pad), 'constant')
+
+        sample = {'x': x, 'y': y}
+
+        if self.transform:
+            sample = self.transform(sample)
+
+        return sample['x'], sample['y']
+
+
+class RandomCrop(object):
+    def __init__(self, output_size=sample_rate):
+        self.output_size = output_size
+
+    def __call__(self, sample):
+        x, y = sample['x'], sample['y']
+
         startx = np.random.randint(pad, x.shape[-1] - sampleSize - pad)
+        #print(startx)
         x = x[startx - pad:startx + sampleSize + pad]
         y = y[startx:startx + sampleSize]
         l = np.random.uniform(0.25, 0.5)
@@ -52,10 +67,16 @@ class Dataset(data.Dataset):
         step = np.random.uniform(-0.5, 0.5)
         ux = int(sp * sample_rate)
         lx = int(l * sample_rate)
-        x[ux:ux + lx] = librosa.effects.pitch_shift(x[ux:ux + lx], sample_rate, n_steps=step)
-        x = torch.from_numpy(x.reshape(1, -1)).type(torch.float32)
-        y = torch.from_numpy(y.reshape(-1)).type(torch.LongTensor)
-        return x, y
+        # x[ux:ux + lx] = librosa.effects.pitch_shift(x[ux:ux + lx], sample_rate, n_steps=step)
+
+        return {'x': x, 'y': y}
+
+
+class ToTensor(object):
+    def __call__(self, sample):
+        x, y = sample['x'], sample['y']
+        return {'x': torch.from_numpy(x.reshape(1, -1)).type(torch.float32),
+                'y': torch.from_numpy(y.reshape(-1)).type(torch.LongTensor)}
 
 
 class Testset(data.Dataset):

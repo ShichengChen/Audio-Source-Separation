@@ -72,7 +72,7 @@ device = torch.device("cuda" if use_cuda else "cpu")
 
 training_set = Dataset(np.arange(0, songnum), np.arange(0, songnum), 'ccmixter2/x/', 'ccmixter2/y/')
 validation_set = Testset(np.arange(0, songnum), 'ccmixter2/x/')
-loadtr = data.DataLoader(training_set, batch_size=2,shuffle=True,num_workers=6)  # pytorch dataloader, more faster than mine
+loadtr = data.DataLoader(training_set, batch_size=6,shuffle=True,num_workers=6)  # pytorch dataloader, more faster than mine
 loadval = data.DataLoader(validation_set,batch_size=1,num_workers=6)
 
 # In[6]:
@@ -146,10 +146,13 @@ def train(epoch):  # training data, the audio except for last 15 seconds
             for s in lossrecord:
                 f.write(str(s) + "\n")
         print('write finish')
+        if not os.path.exists('./model/'): os.makedirs('./model/')
         state = {'epoch': epoch,
                  'state_dict': model.state_dict(),
                  'optimizer': optimizer.state_dict()}
         torch.save(state, resumefile)
+
+    if epoch % 1000 == 0 and epoch > 0:
         test()
 
 # In[ ]:
