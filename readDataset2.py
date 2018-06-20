@@ -6,6 +6,7 @@ import soundfile as sf
 import numpy as np
 import torch
 import h5py
+import datetime
 
 dilations = [2 ** i for i in range(9)] * 7
 pad = np.sum(dilations)
@@ -56,9 +57,10 @@ class RandomCrop(object):
         self.output_size = output_size
 
     def __call__(self, sample):
+        np.random.seed(datetime.datetime.now().second + datetime.datetime.now().microsecond)
         x, y = sample['x'], sample['y']
-
-        startx = np.random.randint(pad, x.shape[-1] - sampleSize - pad)
+        shrink = 15
+        startx = np.random.randint(pad + shrink * sampleSize, x.shape[-1] - sampleSize - pad - shrink * sampleSize)
         #print(startx)
         x = x[startx - pad:startx + sampleSize + pad]
         y = y[startx:startx + sampleSize]
@@ -91,10 +93,9 @@ class Testset(data.Dataset):
     def __getitem__(self, index):
         'Generates one sample of data'
         namex = self.listx[index]
-        x, samplerate = sf.read(self.rootx + str(namex) + '.wav', dtype='float32')
-        x = librosa.resample(x.T, samplerate, sample_rate)
-        x = librosa.to_mono(x)  # read audio and transfrom from stereo to to mono
-        x = x_mu_law_encode(x)
+
+        h5f = h5py.File('ccmixter3/' + str(namex) + '.h5', 'r')
+        x = h5f['x'][:]
 
         xmean = x.mean()
         xstd = x.std()
