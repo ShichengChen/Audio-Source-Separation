@@ -7,7 +7,7 @@ import numpy as np
 from sklearn import datasets, linear_model
 from sklearn.metrics import mean_squared_error, r2_score
 
-with open('./lossRecord/instrumentloss.txt') as f:
+with open('lossRecord/instrumentloss.txt') as f:
     content = f.readlines()
     content = [x.strip() for x in content]
     plotcon = np.around(np.array(content).astype(float),2)

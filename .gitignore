@@ -2,6 +2,7 @@ logdir/
 VCTK-Corpus/
 *.pyc
 vsCorpus/ans/
+vsCorpus/note*
 model/
 *.zip
 ccmixter_corpus/*
