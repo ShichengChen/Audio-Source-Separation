@@ -121,6 +121,7 @@ def test():  # testing data
                 pred = output.max(1, keepdim=True)[1].cpu().numpy().reshape(-1)
                 listofpred.append(pred)
             ans = mu_law_decode(np.concatenate(listofpred))
+            if not os.path.exists('vsCorpus/'): os.makedirs('vsCorpus/')
             sf.write(savemusic.format(iloader), ans, sample_rate)
             print('test stored done', np.round(time.time() - start_time))
 
