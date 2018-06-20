@@ -59,11 +59,11 @@ class RandomCrop(object):
     def __call__(self, sample):
         np.random.seed(datetime.datetime.now().second + datetime.datetime.now().microsecond)
         x, y = sample['x'], sample['y']
-        shrink = 15
+        shrink = 0
         startx = np.random.randint(pad + shrink * sampleSize, x.shape[-1] - sampleSize - pad - shrink * sampleSize)
         #print(startx)
-        x = x[startx - pad:startx + sampleSize + pad]
-        y = y[startx:startx + sampleSize]
+        #x = x[startx - pad:startx + sampleSize + pad]
+        #y = y[startx:startx + sampleSize]
         l = np.random.uniform(0.25, 0.5)
         sp = np.random.uniform(0, 1 - l)
         step = np.random.uniform(-0.5, 0.5)
