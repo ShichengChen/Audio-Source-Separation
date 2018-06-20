@@ -8,7 +8,7 @@ class Wavenet(nn.Module):
         self.dilations = dilations
         self.sd = sd
         super(Wavenet, self).__init__()
-        self.causal = nn.Conv1d(in_channels=1, out_channels=rd, kernel_size=3, padding=1)
+        self.causal = nn.Conv1d(in_channels=1, out_channels=rd, kernel_size=15, padding=7)
         # normal cnn
         self.pad = pad
         # please notice that you cannot use self.sigmoidconvs=dict(), otherwise the layers in the dict() can

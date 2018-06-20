@@ -32,11 +32,11 @@ dilations = [2 ** i for i in range(9)] * 7  # idea from wavenet, have more recep
 residualDim = 128  #
 skipDim = 512
 shapeoftest = 190500
-songnum=8
+songnum=32
 filterSize = 3
-savemusic='vsCorpus/nus1xtr{}.wav'
-resumefile = 'model/instrument1'  # name of checkpoint
-lossname = 'instrumentloss1.txt'  # name of loss file
+savemusic='vsCorpus/nus3xtr{}.wav'
+resumefile = 'model/instrument3'  # name of checkpoint
+lossname = 'instrumentloss3.txt'  # name of loss file
 continueTrain = False  # whether use checkpoint
 pad = np.sum(dilations)  # padding for dilate convolutional layers
 lossrecord = []  # list for record loss
@@ -58,7 +58,7 @@ sampleCnt=0
 
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # use specific GPU
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"  # use specific GPU
 
 # In[4]:
 
@@ -70,13 +70,11 @@ device = torch.device("cuda" if use_cuda else "cpu")
 # torch.set_default_tensor_type('torch.cuda.FloatTensor') #set_default_tensor_type as cuda tensor
 
 
-
-
 transform=transforms.Compose([RandomCrop(),ToTensor()])
-training_set = Dataset(np.arange(0, songnum), np.arange(0, songnum), 'ccmixter2/x/', 'ccmixter2/y/',transform)
-validation_set = Testset(np.arange(0, songnum), 'ccmixter2/x/')
-loadtr = data.DataLoader(training_set, batch_size=1,shuffle=True,num_workers=2)  # pytorch dataloader, more faster than mine
-loadval = data.DataLoader(validation_set,batch_size=1,num_workers=2)
+training_set = Dataset(np.arange(0, songnum), np.arange(0, songnum), 'ccmixter3/x/', 'ccmixter3/y/',transform)
+validation_set = Testset(np.arange(0, songnum), 'ccmixter3/x/')
+loadtr = data.DataLoader(training_set, batch_size=1,shuffle=True,num_workers=3)  # pytorch dataloader, more faster than mine
+loadval = data.DataLoader(validation_set,batch_size=1,num_workers=3)
 
 # In[6]:
 
@@ -165,6 +163,7 @@ def train(epoch):  # training data, the audio except for last 15 seconds
 
     #if epoch % 2 == 0 and epoch > 0:
         #test()
+
 # In[ ]:
 
 

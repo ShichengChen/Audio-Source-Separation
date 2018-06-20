@@ -32,11 +32,11 @@ dilations = [2 ** i for i in range(9)] * 7  # idea from wavenet, have more recep
 residualDim = 128  #
 skipDim = 512
 shapeoftest = 190500
-songnum=1
+songnum=4
 filterSize = 3
-savemusic='vsCorpus/nus1xtr{}.wav'
-resumefile = 'model/instrument'  # name of checkpoint
-lossname = 'instrumentloss.txt'  # name of loss file
+savemusic='vsCorpus/nus0xtr{}.wav'
+resumefile = 'model/instrument0'  # name of checkpoint
+lossname = 'instrumentloss0.txt'  # name of loss file
 continueTrain = False  # whether use checkpoint
 pad = np.sum(dilations)  # padding for dilate convolutional layers
 lossrecord = []  # list for record loss
@@ -58,7 +58,7 @@ sampleCnt=0
 
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # use specific GPU
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # use specific GPU
 
 # In[4]:
 
@@ -108,20 +108,19 @@ if continueTrain:  # if continueTrain, the program will find the checkpoints
 # In[9]:
 
 
-def test():  # testing data
+def test(iloader, xtrain):  # testing data
     model.eval()
     start_time = time.time()
     with torch.no_grad():
-        for iloader, xtrain in enumerate(loadval):
-            listofpred = []
-            for ind in range(pad, xtrain.shape[-1] - pad, sampleSize):
-                output = model(xtrain[:, :, ind - pad:ind + sampleSize + pad].to(device))
-                pred = output.max(1, keepdim=True)[1].cpu().numpy().reshape(-1)
-                listofpred.append(pred)
-            ans = mu_law_decode(np.concatenate(listofpred))
-            if not os.path.exists('vsCorpus/'): os.makedirs('vsCorpus/')
-            sf.write(savemusic.format(iloader), ans, sample_rate)
-            print('test stored done', np.round(time.time() - start_time))
+        listofpred = []
+        for ind in range(pad, xtrain.shape[-1] - pad, sampleSize):
+            output = model(xtrain[:, :, ind - pad:ind + sampleSize + pad].to(device))
+            pred = output.max(1, keepdim=True)[1].cpu().numpy().reshape(-1)
+            listofpred.append(pred)
+        ans = mu_law_decode(np.concatenate(listofpred))
+        if not os.path.exists('vsCorpus/'): os.makedirs('vsCorpus/')
+        sf.write(savemusic.format(iloader), ans, sample_rate)
+        print('test stored done', np.round(time.time() - start_time))
 
 
 def train(epoch):  # training data, the audio except for last 15 seconds
@@ -129,7 +128,7 @@ def train(epoch):  # training data, the audio except for last 15 seconds
     for iloader, (xtrain, ytrain) in enumerate(loadtr):
         idx = np.arange(pad, xtrain.shape[-1] - pad - sampleSize, 1000)
         np.random.shuffle(idx)
-        lens = idx.shape[-1] // 1
+        lens = idx.shape[-1] // 2
         idx = idx[:lens]
         for i, ind in enumerate(idx):
             start_time = time.time()
@@ -144,10 +143,12 @@ def train(epoch):  # training data, the audio except for last 15 seconds
             global sampleCnt
             sampleCnt+=1
             print('Train Epoch: {} iloader:{},{} Loss:{:.6f}: , ({:.3f} sec/step)'.format(
-                epoch, i,idx.shape[-1], loss.item(), time.time() - start_time))
+                epoch, i, idx.shape[-1], loss.item(), time.time() - start_time))
             if sampleCnt % 10000 == 0 and sampleCnt > 0:
                 for param in optimizer.param_groups:
                     param['lr'] *= 0.98
+
+        if epoch % 2 == 0:test(iloader, xtrain)
 
     if epoch % 1 == 0 and epoch > 0:
         with open("lossRecord/" + lossname, "w") as f:
@@ -160,8 +161,8 @@ def train(epoch):  # training data, the audio except for last 15 seconds
                  'optimizer': optimizer.state_dict()}
         torch.save(state, resumefile)
 
-    if epoch % 2 == 0 and epoch > 0:
-        test()
+    #if epoch % 2 == 0 and epoch > 0:
+        #test()
 
 # In[ ]:
 
