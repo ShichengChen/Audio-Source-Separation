@@ -51,5 +51,7 @@ class Wavenet(nn.Module):
             x = self.denseconvs[i](x)
             # fc 1d cnn kernel size =1
             x += xinput
-        x = self.post2(F.relu(self.post1(F.relu(skip_connections))))
-        return x
+        x = F.relu(self.post1(F.relu(skip_connections)))
+        y = self.post2(x)
+        z = self.post2(x)
+        return y,z

@@ -17,9 +17,9 @@ import soundfile as sf
 import time
 import os
 from torch.utils import data
-from wavenet2 import Wavenet
+from wavenet3 import Wavenet
 from transformData import x_mu_law_encode,y_mu_law_encode,mu_law_decode,onehot,cateToSignal
-from readDataset2 import Dataset,Testset,RandomCrop,ToTensor
+from readDataset3 import Dataset,Testset,RandomCrop,ToTensor
 from unet import Unet
 import h5py
 
@@ -33,11 +33,11 @@ dilations = [2 ** i for i in range(9)] * 7  # idea from wavenet, have more recep
 residualDim = 128  #
 skipDim = 512
 shapeoftest = 190500
-songnum=50
+songnum=1
 filterSize = 3
-savemusic='vsCorpus/nus2xtr{}.wav'
-resumefile = 'model/instrument2'  # name of checkpoint
-lossname = 'instrumentloss2.txt'  # name of loss file
+savemusic='vsCorpus/nus0xtr{}.wav'
+resumefile = 'model/instrument0'  # name of checkpoint
+lossname = 'instrumentloss0.txt'  # name of loss file
 continueTrain = False  # whether use checkpoint
 pad = np.sum(dilations)  # padding for dilate convolutional layers
 lossrecord = []  # list for record loss
@@ -59,7 +59,7 @@ sampleCnt=0
 
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"  # use specific GPU
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # use specific GPU
 
 # In[4]:
 
@@ -126,17 +126,18 @@ def test(iloader, xtrain):  # testing data
 
 def train(epoch):  # training data, the audio except for last 15 seconds
     model.train()
-    for iloader, (xtrain, ytrain) in enumerate(loadtr):
+    for iloader, (xtrain, ytrain,ztrain) in enumerate(loadtr):
         idx = np.arange(pad, xtrain.shape[-1] - pad - sampleSize, 1000)
         np.random.shuffle(idx)
-        lens = idx.shape[-1]//2
+        lens = idx.shape[-1] // 2
         idx = idx[:lens]
         for i, ind in enumerate(idx):
             start_time = time.time()
             data = xtrain[:, :, ind - pad:ind + sampleSize + pad].to(device)
-            target = ytrain[:, ind:ind + sampleSize].to(device)
+            target0 = ytrain[:, ind:ind + sampleSize].to(device)
+            target1 = ztrain[:, ind:ind + sampleSize].to(device)
             output = model(data)
-            loss = criterion(output, target)
+            loss = criterion(output[0], target0) + criterion(output[1], target1)
             lossrecord.append(loss.item())
             optimizer.zero_grad()
             loss.backward()

@@ -7,11 +7,11 @@ class Wavenet(nn.Module):
         self.dilations=dilations
         self.sd=sd
         super(Wavenet, self).__init__()
-        self.causal = nn.Conv1d(in_channels=1,out_channels=rd,kernel_size=3,padding=1)
+        self.causal = nn.Conv1d(in_channels=1, out_channels=rd, kernel_size=25, padding=12)
         #normal cnn
         self.pad=pad
         self.tanhconvs = nn.ModuleList()
-        #please notice that you cannot use self.sigmoidconvs=dict(), otherwise the layers in the dict() can 
+        #please notice that you cannot use self.sigmoidconvs=dict(), otherwise the layers in the dict() can
         #not update the weights
         self.sigmoidconvs = nn.ModuleList()
         self.skipconvs = nn.ModuleList()
@@ -30,7 +30,7 @@ class Wavenet(nn.Module):
             self.skipconvs.append(nn.Conv1d(in_channels=rd,out_channels=sd,kernel_size=1))
             self.denseconvs.append(nn.Conv1d(in_channels=rd,out_channels=rd,kernel_size=1))
         self.post1 = nn.Conv1d(in_channels=sd,out_channels=sd,kernel_size=1)
-        # normal cnn 
+        # normal cnn
         self.post2 = nn.Conv1d(in_channels=sd,out_channels=qd,kernel_size=1)
         self.tanh,self.sigmoid = nn.Tanh(),nn.Sigmoid()
 
@@ -41,7 +41,7 @@ class Wavenet(nn.Module):
         for i, d in enumerate(self.dilations):
             if(self.pad==0):xinput = x.clone()
             else:xinput = x.clone()[:,:,d:-d]
-            
+
             #when you do 1d cnn with dilation, and you do not padding, you need to do this
             x1 = self.tanh(self.tanhconvs[i](x))
             x2 = self.sigmoid(self.sigmoidconvs[i](x))

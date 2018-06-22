@@ -20,6 +20,7 @@ from torch.utils import data
 from wavenet2 import Wavenet
 from transformData import x_mu_law_encode,y_mu_law_encode,mu_law_decode,onehot,cateToSignal
 from readDataset2 import Dataset,Testset,RandomCrop,ToTensor
+from unet import Unet
 import h5py
 
 # In[2]:
@@ -32,7 +33,7 @@ dilations = [2 ** i for i in range(9)] * 7  # idea from wavenet, have more recep
 residualDim = 128  #
 skipDim = 512
 shapeoftest = 190500
-songnum=8
+songnum=50
 filterSize = 3
 savemusic='vsCorpus/nus1xtr{}.wav'
 resumefile = 'model/instrument1'  # name of checkpoint
@@ -41,7 +42,7 @@ continueTrain = False  # whether use checkpoint
 pad = np.sum(dilations)  # padding for dilate convolutional layers
 lossrecord = []  # list for record loss
 sampleCnt=0
-# pad=0
+#pad=0
 
 
 #     #            |----------------------------------------|     *residual*
@@ -70,17 +71,15 @@ device = torch.device("cuda" if use_cuda else "cpu")
 # torch.set_default_tensor_type('torch.cuda.FloatTensor') #set_default_tensor_type as cuda tensor
 
 
-
-
 transform=transforms.Compose([RandomCrop(),ToTensor()])
-training_set = Dataset(np.arange(0, songnum), np.arange(0, songnum), 'ccmixter2/x/', 'ccmixter2/y/',transform)
-validation_set = Testset(np.arange(0, songnum), 'ccmixter2/x/')
-loadtr = data.DataLoader(training_set, batch_size=1,shuffle=True,num_workers=2)  # pytorch dataloader, more faster than mine
-loadval = data.DataLoader(validation_set,batch_size=1,num_workers=2)
+training_set = Dataset(np.arange(0, songnum), np.arange(0, songnum), 'ccmixter3/x/', 'ccmixter3/y/',transform)
+validation_set = Testset(np.arange(0, songnum), 'ccmixter3/x/')
+loadtr = data.DataLoader(training_set, batch_size=1,shuffle=True,num_workers=3)  # pytorch dataloader, more faster than mine
+loadval = data.DataLoader(validation_set,batch_size=1,num_workers=3)
 
 # In[6]:
 
-
+#model = Unet(skipDim, quantization_channels, residualDim,device)
 model = Wavenet(pad, skipDim, quantization_channels, residualDim, dilations,device)
 model = nn.DataParallel(model)
 model = model.cuda()
@@ -128,7 +127,7 @@ def test(iloader, xtrain):  # testing data
 def train(epoch):  # training data, the audio except for last 15 seconds
     model.train()
     for iloader, (xtrain, ytrain) in enumerate(loadtr):
-        idx = np.arange(pad, xtrain.shape[-1] - pad - sampleSize, 1000)
+        idx = np.arange(pad, xtrain.shape[-1]//2 - pad - sampleSize, 1000)
         np.random.shuffle(idx)
         lens = idx.shape[-1] // 2
         idx = idx[:lens]
@@ -144,15 +143,15 @@ def train(epoch):  # training data, the audio except for last 15 seconds
             optimizer.step()
             global sampleCnt
             sampleCnt+=1
-            print('Train Epoch: {} iloader:{},{} Loss:{:.6f}: , ({:.3f} sec/step)'.format(
-                epoch, i, idx.shape[-1], loss.item(), time.time() - start_time))
+            print('Train Epoch: {} iloader:{},{},{} Loss:{:.6f}: , ({:.3f} sec/step)'.format(
+                epoch, iloader,i, idx.shape[-1], loss.item(), time.time() - start_time))
             if sampleCnt % 10000 == 0 and sampleCnt > 0:
                 for param in optimizer.param_groups:
                     param['lr'] *= 0.98
 
         if epoch % 2 == 0:test(iloader, xtrain)
 
-    if epoch % 1 == 0 and epoch > 0:
+    if epoch % 1 == 0:
         with open("lossRecord/" + lossname, "w") as f:
             for s in lossrecord:
                 f.write(str(s) + "\n")
@@ -165,6 +164,7 @@ def train(epoch):  # training data, the audio except for last 15 seconds
 
     #if epoch % 2 == 0 and epoch > 0:
         #test()
+
 # In[ ]:
 
 
