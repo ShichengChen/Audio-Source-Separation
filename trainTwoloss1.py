@@ -33,9 +33,10 @@ dilations = [2 ** i for i in range(9)] * 7  # idea from wavenet, have more recep
 residualDim = 128  #
 skipDim = 512
 shapeoftest = 190500
-songnum=1
+songnum=4
 filterSize = 3
-savemusic='vsCorpus/nus0xtr{}.wav'
+savemusic0='vsCorpus/nus00xtr{}.wav'
+savemusic1='vsCorpus/nus01xtr{}.wav'
 resumefile = 'model/instrument0'  # name of checkpoint
 lossname = 'instrumentloss0.txt'  # name of loss file
 continueTrain = False  # whether use checkpoint
@@ -123,8 +124,8 @@ def test(iloader, xtrain):  # testing data
         ans0 = mu_law_decode(np.concatenate(listofpred0))
         ans1 = mu_law_decode(np.concatenate(listofpred1))
         if not os.path.exists('vsCorpus/'): os.makedirs('vsCorpus/')
-        sf.write(savemusic.format(iloader), ans0, sample_rate)
-        sf.write(savemusic.format(iloader), ans1, sample_rate)
+        sf.write(savemusic0.format(iloader), ans0, sample_rate)
+        sf.write(savemusic1.format(iloader), ans1, sample_rate)
         print('test stored done', np.round(time.time() - start_time))
 
 

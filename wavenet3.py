@@ -28,7 +28,8 @@ class Wavenet(nn.Module):
             self.denseconvs.append(nn.Conv1d(in_channels=rd, out_channels=rd, kernel_size=1))
         self.post1 = nn.Conv1d(in_channels=sd, out_channels=sd, kernel_size=1)
         # normal cnn
-        self.post2 = nn.Conv1d(in_channels=sd, out_channels=qd, kernel_size=1)
+        self.post20 = nn.Conv1d(in_channels=sd, out_channels=qd, kernel_size=1)
+        self.post21 = nn.Conv1d(in_channels=sd, out_channels=qd, kernel_size=1)
 
     def forward(self, x):
         finallen = x.shape[-1] - 2 * self.pad
@@ -52,6 +53,6 @@ class Wavenet(nn.Module):
             # fc 1d cnn kernel size =1
             x += xinput
         x = F.relu(self.post1(F.relu(skip_connections)))
-        y = self.post2(x)
-        z = self.post2(x)
+        y = self.post20(x)
+        z = self.post21(x)
         return y,z
