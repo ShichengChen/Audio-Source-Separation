@@ -1,7 +1,9 @@
 my code is first inspired by https://github.com/ibab/tensorflow-wavenet, https://github.com/soobinseo/wavenet and https://github.com/f90/Wave-U-Net
 
-WaveNet paper https://arxiv.org/pdf/1609.03499.pdf
-facebook paper https://arxiv.org/pdf/1805.07848.pdf
+# Paper
+    WaveNet,deepmind paper https://arxiv.org/pdf/1609.03499.pdf
+    facebook paper https://arxiv.org/pdf/1805.07848.pdf
+    Spotify paper https://arxiv.org/pdf/1806.03185.pdf
 
 # Using pyTorch to implement the WaveNet for vocal separation
 # remove the background music from songs
@@ -92,4 +94,3 @@ facebook paper https://arxiv.org/pdf/1805.07848.pdf
  
 # Good loss image
 ![one of good loss image](./lossRecord/loss.png)
-
