@@ -37,9 +37,9 @@ class Dataset(data.Dataset):
         x = x_mu_law_encode(x)  # use mu_law to encode the audio
         y = y_mu_law_encode(y)
 
-        xmean = x.mean()
-        xstd = x.std()
-        x = (x - xmean) / xstd
+        #xmean = x.mean()
+        #xstd = x.std()
+        #x = (x - xmean) / xstd
         # x+=np.random.normal(size=x.shape[-1])*(1e-3)
         x = np.pad(x, (pad, pad), 'constant')
         y = np.pad(y, (pad, pad), 'constant')

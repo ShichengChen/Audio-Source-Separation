@@ -8,18 +8,17 @@ import torch
 import h5py
 import datetime
 
-dilations = [2 ** i for i in range(9)] * 7
-pad = np.sum(dilations)
 sampleSize = 16000
 sample_rate = 16000  # the length of audio for one second
 
 
 class Dataset(data.Dataset):
-    def __init__(self, listx, listy, rootx, rooty, transform=None):
+    def __init__(self, listx, listy, rootx, rooty,pad, transform=None):
         self.rootx = rootx
         self.rooty = rooty
         self.listx = listx
         self.listy = listy
+        self.pad=pad
         self.transform = transform
 
     def __len__(self):
@@ -27,42 +26,42 @@ class Dataset(data.Dataset):
         return len(self.listx)
 
     def __getitem__(self, index):
-        'Generates one sample of data'
         namex = self.listx[index]
         namey = self.listy[index]
 
         h5f = h5py.File('ccmixter3/' + str(namex) + '.h5', 'r')
-        x, y,z = h5f['x'][:], h5f['y'][:], h5f['z'][:]
+        x, y = h5f['x'][:], h5f['y'][:]
+
 
         x = x_mu_law_encode(x)  # use mu_law to encode the audio
         y = y_mu_law_encode(y)
-        z = y_mu_law_encode(z)
 
-        xmean = x.mean()
-        xstd = x.std()
+        xmean = -0.0039727693202439695
+        xstd = 0.54840165197849278
         x = (x - xmean) / xstd
-        # x+=np.random.normal(size=x.shape[-1])*(1e-3)
-        x = np.pad(x, (pad, pad), 'constant')
-        y = np.pad(y, (pad, pad), 'constant')
-        z = np.pad(z, (pad, pad), 'constant')
 
-        sample = {'x': x, 'y': y,'z': z}
+
+        x = np.pad(x, (self.pad, self.pad), 'constant')
+        y = np.pad(y, (self.pad, self.pad), 'constant')
+
+        sample = {'x': x, 'y': y}
 
         if self.transform:
             sample = self.transform(sample)
 
-        return sample['x'], sample['y'],sample['z']
+        return sample['x'], sample['y']
 
 
 class RandomCrop(object):
-    def __init__(self, output_size=sample_rate):
+    def __init__(self, pad,output_size=sample_rate):
         self.output_size = output_size
+        self.pad=pad
 
     def __call__(self, sample):
         np.random.seed(datetime.datetime.now().second + datetime.datetime.now().microsecond)
-        x, y, z = sample['x'], sample['y'],sample['z']
+        x, y = sample['x'], sample['y']
         shrink = 0
-        startx = np.random.randint(pad + shrink * sampleSize, x.shape[-1] - sampleSize - pad - shrink * sampleSize)
+        startx = np.random.randint(self.pad + shrink * sampleSize, x.shape[-1] - sampleSize - self.pad - shrink * sampleSize)
         #print(startx)
         #x = x[startx - pad:startx + sampleSize + pad]
         #y = y[startx:startx + sampleSize]
@@ -73,21 +72,21 @@ class RandomCrop(object):
         lx = int(l * sample_rate)
         # x[ux:ux + lx] = librosa.effects.pitch_shift(x[ux:ux + lx], sample_rate, n_steps=step)
 
-        return {'x': x, 'y': y,'z': z}
+        return {'x': x, 'y': y}
 
 
 class ToTensor(object):
     def __call__(self, sample):
-        x, y,z = sample['x'], sample['y'],sample['z']
+        x, y = sample['x'], sample['y']
         return {'x': torch.from_numpy(x.reshape(1, -1)).type(torch.float32),
-                'y': torch.from_numpy(y.reshape(-1)).type(torch.LongTensor),
-               'z': torch.from_numpy(z.reshape(-1)).type(torch.LongTensor)}
+                'y': torch.from_numpy(y.reshape(-1)).type(torch.LongTensor)}
 
 
 class Testset(data.Dataset):
-    def __init__(self, listx, rootx):
+    def __init__(self, listx, rootx,pad):
         self.rootx = rootx
         self.listx = listx
+        self.pad = pad
 
     def __len__(self):
         'Denotes the total number of samples'
@@ -98,13 +97,17 @@ class Testset(data.Dataset):
         namex = self.listx[index]
 
         h5f = h5py.File('ccmixter3/' + str(namex) + '.h5', 'r')
-        x = h5f['x'][:]
+        x, y = h5f['x'][:], h5f['y'][:]
 
-        xmean = x.mean()
-        xstd = x.std()
+        x = x_mu_law_encode(x)  # use mu_law to encode the audio
+        y = y_mu_law_encode(y)
+
+        xmean = -0.0039727693202439695
+        xstd = 0.54840165197849278
         x = (x - xmean) / xstd
-        # x+=np.random.normal(size=x.shape[-1])*(1e-3)
-        x = np.pad(x, (pad, pad), 'constant')
+        x = np.pad(x, (self.pad, self.pad), 'constant')
+        y = np.pad(y, (self.pad, self.pad), 'constant')
 
         x = torch.from_numpy(x.reshape(1, -1)).type(torch.float32)
-        return x
+        y = torch.from_numpy(y.reshape(-1)).type(torch.LongTensor)
+        return x,y

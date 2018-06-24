@@ -77,6 +77,25 @@ validation_set = Dataset(np.arange(0, songnum), np.arange(0, songnum), 'ccmixter
 loadtr = data.DataLoader(training_set, **params)  # pytorch dataloader, more faster than mine
 loadval = data.DataLoader(validation_set, **params)
 
+'''mx,my,mz=[],[],[]
+for i in range(songnum):
+    h5f = h5py.File('ccmixter3/' + str(i) + '.h5', 'r')
+    x, y = h5f['x'][:], h5f['y'][:]#, h5f['z'][:]
+    x = x_mu_law_encode(x)
+    y = y_mu_law_encode(y)
+    xmean =-0.0039727693202439695
+    xstd = 0.54840165197849278
+    x = (x - xmean) / xstd
+    x = np.pad(x, (pad, pad), 'constant')
+    y = np.pad(y, (pad, pad), 'constant')
+    x = torch.from_numpy(x.reshape(1,1,-1)).type(torch.float32)
+    y = torch.from_numpy(y.reshape(1,-1)).type(torch.LongTensor)
+    #z = torch.from_numpy(z.reshape(1,-1)).type(torch.LongTensor)
+    #assert((x.shape[-1]==y.shape[-1]) & (x.shape[-1]==z.shape[-1]))
+    mx.append(x)
+    my.append(y)
+    #mz.append(z)
+    h5f.close()'''
 # In[6]:
 
 

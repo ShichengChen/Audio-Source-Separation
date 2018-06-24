@@ -1,16 +1,19 @@
-my code is first inspired by https://github.com/ibab/tensorflow-wavenet, https://github.com/soobinseo/wavenet and https://github.com/f90/Wave-U-Net
+my code is first inspired by
+    https://github.com/ibab/tensorflow-wavenet
+    https://github.com/soobinseo/wavenet
+    https://github.com/f90/Wave-U-Net
 
 # Paper
     WaveNet,deepmind paper https://arxiv.org/pdf/1609.03499.pdf
     facebook paper https://arxiv.org/pdf/1805.07848.pdf
-    Spotify paper https://arxiv.org/pdf/1806.03185.pdf
+    Spotify paper wave-U-net https://arxiv.org/pdf/1806.03185.pdf
 
 # Using pyTorch to implement the WaveNet for vocal separation
 # remove the background music from songs
 
   - vstrain.ipynb
      - all the main code is in this file, you can see more comments on this file
-  - vstrainTowloss.py
+  - vstrainTowloss.py(now I do not use this, I will continue to test this in the future)
      - see as above file except that label are instrument and voice
   - readDataset.py
     - custom dataset class inherit from pytorch
@@ -19,7 +22,7 @@ my code is first inspired by https://github.com/ibab/tensorflow-wavenet, https:/
   - readDataset3.py
     - use h5py to speed up, read instument file and voice file
   - transformData.py 
-    - provides mu_law encode and decode functions
+    - provides mu_law encode and decode functions(actually, pytorch have these functions)
   - wavenet.py
     - structure of wavenet. learned from https://arxiv.org/pdf/1609.03499.pdf
     - have dilated cnn layers, you can learn dilated from    https://github.com/vdumoulin/conv_arithmetic/blob/master/README.md
@@ -30,16 +33,16 @@ my code is first inspired by https://github.com/ibab/tensorflow-wavenet, https:/
     - add relu at the beginning of every residual blocks
     - very easy to train and the results are good. 
     - if the music is not hard, such as many repeat rhythm
-    - I can get good result for only instrument music by only 4 epochs(about 4000 iterations) for one song.
+    - I can get good result for only instrument music by only 3 epochs(about 3000 iterations) for one song.
     - if the music is hard, they take electro acoustics as instrument
     - I need to train for 10 epochs for one song
   - wavenet3.py
     - structure of wavenet. inspired by https://github.com/f90/Wave-U-Net
     - same as wavenet2 except that I use two loss, one loss for instument and the other one for voice
-    - Although my assignment is to get instrument, I still think the two will help. I am still working on this on.
+    - two loss indeed have help, for a easy song, only 3 epochs(3000 iterations), the result can be good. voice file + instrument file = mix file. In other words, I add a new restriction for my network 
   - unet.py
      - structure of unet. learned from https://arxiv.org/pdf/1806.03185.pdf
-     - I remove dilated cnn layers by normal cnn layers, the results are not good.
+     - I remove dilated cnn layers by normal cnn layers, the results are not good. Because they used sftf to deal with data, but I did not use this. It's worth try in the future
   - clean_ccmixter_corpus.ipynb, clean_ccmixter_corpus2.ipynb
      - transform ccmixter from (audio time series, either stereo or mono) to mono
      - save as h5 format by h5py
@@ -60,21 +63,39 @@ my code is first inspired by https://github.com/ibab/tensorflow-wavenet, https:/
  - pred_mix.wav(test) (for one song, I get a good result)
  - ccmixter corpus (for 50 songs, I still try to improve my model and learning strategy)
 
-# Result
+# Training data and testing data
+- first half of the songs as training data, the last half of the songs as testing data.
+
+# Data Augmentation
+- multiply source signals with a factor chosen uniformly from the interval [0.7, 1.0], which is learned from Spotify paper. 
+- The result is so good by using this type of data augmentation. Even the loss become bigger, however, the voice became less. The model can generalize better.
+
+# Result for one song
 - the model is trained on training set except for last 15 seconds
 - bestResultonTestingSet.wav (testing set)
 - bestResultonTrainingSet.wav (training set except for last 15 seconds)
 - bestResultonValidation.wav (last 15 seconds for training set)
 - there are still some noise and a little music on audios on validation and testing set
 
-# Loss
+# Result for ccmixter(50 songs)
+- If I only train few songs, the results will be also good. 
+- If I train on the whole dataset, the results will become worse. 
+- I am trying to use some new sampling strategies, for example,
+- startx = np.random.randint(0,sampleSize)
+- idx = np.arange(startx + pad, xtrain.shape[-1] // 2 - pad - sampleSize, 2 * sampleSize), 
+
+# Loss for one song
  - best loss: around 1
+
+# Loss for ccmixter
+ - around 3
 
 # hyper-parameters
  - sampleSize=16000#recommended by facebook paper
  - sample_rate=16000#the length of audio for one second
  - quantization_channels=256 #discretize the value to 256 numbers
- - dilations=[2**i for i in range(9)]*7#recommended by facebook paper
+ - ~~dilations=[2**i for i in range(9)]*7#recommended by facebook paper~~
+ - dilations=[2**i for i in range(9)]*5 for quicker test
  - residualDim=128#recommended by facebook paper
  - skipDim=512
  - initFilterSize=25#recommened by https://github.com/f90/Wave-U-Net, help me remove a lot of noise
@@ -83,14 +104,9 @@ my code is first inspired by https://github.com/ibab/tensorflow-wavenet, https:/
  
 # Notice
  - if i set residual channel to 256, the loss will stuck into 4.5,(actually, loss returns from 3.5)
- - if you only padding zero on the two side of the audio, which is slightly worse than the result which you padding whenever you use cnn. I still do not understand
- - if i set the number of cnn dilation layers to 100, the result is also not good. Maybe because two big padding area or two big receptive field
  - if you design custom model, you should use self.convs = nn.ModuleList() instead of self.convs = dict(). If you use the latter way, the pytorch cannot update the weight in the dict() 
 
 # ToDo
  - ~~better learning rate decay strategy, speed up the training process.~~
  - ~~bigger dataset()~~
  - try to use better model for ccmixter corpus(50 songs)
- 
-# Good loss image
-![one of good loss image](./lossRecord/loss.png)

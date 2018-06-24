@@ -34,9 +34,9 @@ class Dataset(data.Dataset):
         x=x_mu_law_encode(x).reshape(1,-1) # use mu_law to encode the audio
         y=y_mu_law_encode(y).reshape(-1)
         
-        xmean=x.mean()
-        xstd=x.std()
-        x=(x-xmean)/xstd
+        #xmean=x.mean()
+        #xstd=x.std()
+        #x=(x-xmean)/xstd
         x+=np.random.normal(size=x.shape[-1])*(1e-3)
         
         #lensofran=np.random.uniform(0.25,0.5)
