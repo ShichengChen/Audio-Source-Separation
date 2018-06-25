@@ -28,12 +28,12 @@ dilations = [2 ** i for i in range(9)] * 5  # idea from wavenet, have more recep
 residualDim = 128  #
 skipDim = 512
 shapeoftest = 190500
-songnum=50
+songnum=10
 filterSize = 3
 savemusic='vsCorpus/nus1xtr{}.wav'
 #savemusic0='vsCorpus/nus10xtr{}.wav'
 #savemusic1='vsCorpus/nus11xtr{}.wav'
-resumefile = 'model/instrument1'  # name of checkpoint
+resumefile = 'model/instrument11'  # name of checkpoint
 lossname = 'instrumentloss1.txt'  # name of loss file
 continueTrain = False  # whether use checkpoint
 pad = np.sum(dilations)  # padding for dilate convolutional layers
@@ -56,10 +56,10 @@ device = torch.device("cuda" if use_cuda else "cpu")
 
 
 transform=transforms.Compose([RandomCrop(pad=pad),ToTensor()])
-training_set = Dataset(np.arange(0, songnum), np.arange(0, songnum), 'ccmixter3/x/', 'ccmixter3/y/',pad=pad,transform=transform)
-validation_set = Testset(np.arange(0, songnum), 'ccmixter3/x/',pad=pad)
-loadtr = data.DataLoader(training_set, batch_size=1,shuffle=True,num_workers=2)  # pytorch dataloader, more faster than mine
-loadval = data.DataLoader(validation_set,batch_size=1,num_workers=2)
+training_set = Dataset(np.arange(songnum), np.arange(songnum), 'ccmixter3/x/', 'ccmixter3/y/',pad=pad,transform=transform)
+validation_set = Testset(np.arange(songnum), 'ccmixter3/x/',pad=pad)
+loadtr = data.DataLoader(training_set, batch_size=1,shuffle=True,num_workers=1)  # pytorch dataloader, more faster than mine
+loadval = data.DataLoader(validation_set,batch_size=1,num_workers=1)
 
 # In[6]:
 
@@ -71,8 +71,8 @@ criterion = nn.CrossEntropyLoss()
 # in wavenet paper, they said crossentropyloss is far better than MSELoss
 optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
 # use adam to train
-maxloss=np.zeros(songnum)+100
 
+maxloss=np.zeros(50)+100
 # In[7]:
 
 start_epoch=0
@@ -97,7 +97,8 @@ def test(epoch):  # testing data
     model.eval()
     start_time = time.time()
     with torch.no_grad():
-        for iloader, (xtrain, ytrain) in enumerate(loadval):
+        for iloader, xtrain, ytrain in loadval:
+            iloader=iloader.item()
             listofpred0 = []
             cnt,aveloss=0,0
             for ind in range(pad, xtrain.shape[-1] - pad - sampleSize, sampleSize):
@@ -119,18 +120,17 @@ def test(epoch):  # testing data
 
 
 def train(epoch):  # training data, the audio except for last 15 seconds
-    for iloader, xtrain, ytrain in loadtr:
+    for iloader,xtrain, ytrain in loadtr:
         startx = np.random.randint(0,sampleSize)
-        idx = np.arange(startx+pad, xtrain.shape[-1]//2 - pad - sampleSize, sampleSize)
+        idx = np.arange(startx + pad, xtrain.shape[-1]//2 - pad - sampleSize, sampleSize * 3)
         np.random.shuffle(idx)
-        lens = 100
+        lens = 25
         idx = idx[:lens]
         cnt, aveloss = 0, 0
         start_time = time.time()
         for i, ind in enumerate(idx):
             model.train()
-            factor=np.random.uniform(low=0.7, high=1.0)
-            data = (factor*xtrain[:, :, ind - pad:ind + sampleSize + pad]).to(device)
+            data = (xtrain[:, :, ind - pad:ind + sampleSize + pad]).to(device)
             target0 = ytrain[:, ind:ind + sampleSize].to(device)
             output = model(data)
             loss = criterion(output, target0)
@@ -165,4 +165,4 @@ def train(epoch):  # training data, the audio except for last 15 seconds
 print('training...')
 for epoch in range(100000):
     train(epoch+start_epoch)
-    if epoch % 4 == 0 and epoch > 0: test(epoch)
+    if epoch % 4 == 0 and epoch > 0: test(epoch+start_epoch)

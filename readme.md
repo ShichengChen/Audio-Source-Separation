@@ -9,7 +9,7 @@ my code is first inspired by
     Spotify paper wave-U-net https://arxiv.org/pdf/1806.03185.pdf
 
 # Using pyTorch to implement the WaveNet for vocal separation
-# remove the background music from songs
+# remove the voice from songs
 
   - vstrain.ipynb
      - all the main code is in this file, you can see more comments on this file
@@ -67,7 +67,7 @@ my code is first inspired by
 - first half of the songs as training data, the last half of the songs as testing data.
 
 # Data Augmentation
-- multiply source signals with a factor chosen uniformly from the interval [0.7, 1.0], which is learned from Spotify paper. 
+- multiply source signals with a factor chosen uniformly from the interval [0.7, 1.0] and set the input mixture as the sum of source signals, which is learned from Spotify paper. 
 - The result is so good by using this type of data augmentation. Even the loss become bigger, however, the voice became less. The model can generalize better.
 
 # Result for one song
@@ -80,9 +80,12 @@ my code is first inspired by
 # Result for ccmixter(50 songs)
 - If I only train few songs, the results will be also good. 
 - If I train on the whole dataset, the results will become worse. 
-- I am trying to use some new sampling strategies, for example,
-- startx = np.random.randint(0,sampleSize)
-- idx = np.arange(startx + pad, xtrain.shape[-1] // 2 - pad - sampleSize, 2 * sampleSize), 
+
+#Generalization for ccmixter(50 songs)
+- ccmixter has 3 Children's songs, two songs as training data and the other as testing data, the result on testing data is also very good even though is slightly worse than training data.
+- Three rap songs can also generalize well
+- Two songs have different background music and same lyrics(two same voice), generalization is ok, ok, but worse than above two situations
+- first 45 songs for training and last 5 songs for testing, the results are still not good.
 
 # Loss for one song
  - best loss: around 1
@@ -109,4 +112,4 @@ my code is first inspired by
 # ToDo
  - ~~better learning rate decay strategy, speed up the training process.~~
  - ~~bigger dataset()~~
- - try to use better model for ccmixter corpus(50 songs)
+ - try to use better method for training ccmixter corpus(50 songs)

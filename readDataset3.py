@@ -26,13 +26,16 @@ class Dataset(data.Dataset):
         return len(self.listx)
 
     def __getitem__(self, index):
+        np.random.seed()
         namex = self.listx[index]
         namey = self.listy[index]
 
         h5f = h5py.File('ccmixter3/' + str(namex) + '.h5', 'r')
-        x, y = h5f['x'][:], h5f['y'][:]
+        x, y, z = h5f['x'][:], h5f['y'][:],h5f['z'][:]
 
-
+        factor = np.random.uniform(low=0.7, high=1.0)
+        y = y * factor
+        x = (y + z)
         x = x_mu_law_encode(x)  # use mu_law to encode the audio
         y = y_mu_law_encode(y)
 
@@ -49,7 +52,7 @@ class Dataset(data.Dataset):
         if self.transform:
             sample = self.transform(sample)
 
-        return sample['x'], sample['y']
+        return namex,sample['x'], sample['y']
 
 
 class RandomCrop(object):
@@ -110,4 +113,4 @@ class Testset(data.Dataset):
 
         x = torch.from_numpy(x.reshape(1, -1)).type(torch.float32)
         y = torch.from_numpy(y.reshape(-1)).type(torch.LongTensor)
-        return x,y
+        return namex,x,y
