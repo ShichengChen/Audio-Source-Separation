@@ -15,10 +15,10 @@ my code is first inspired by
      - all the main code is in this file, you can see more comments on this file
   - vstrainTowloss.py(now I do not use this, I will continue to test this in the future)
      - see as above file except that label are instrument and voice
-  - readDataset.py
-    - custom dataset class inherit from pytorch
-  - readDataset2.py
-    - use h5py to speed up
+  - trainunet.py
+     - use waveunet to train the model, not exact unet, biggest change in the file is use Short-time Fourier transform to deal with data
+  - DatasetWaveUnet.py
+    - use librosa stft to deal with data
   - readDataset3.py
     - use h5py to speed up, read instument file and voice file
   - transformData.py 
@@ -42,7 +42,7 @@ my code is first inspired by
     - two loss indeed have help, for a easy song, only 3 epochs(3000 iterations), the result can be good. voice file + instrument file = mix file. In other words, I add a new restriction for my network 
   - unet.py
      - structure of unet. learned from https://arxiv.org/pdf/1806.03185.pdf
-     - I remove dilated cnn layers by normal cnn layers, the results are not good. Because they used sftf to deal with data, but I did not use this. It's worth try in the future
+     - I remove dilated cnn layers by normal cnn layers, 
   - clean_ccmixter_corpus.ipynb, clean_ccmixter_corpus2.ipynb
      - transform ccmixter from (audio time series, either stereo or mono) to mono
      - save as h5 format by h5py
@@ -81,7 +81,7 @@ my code is first inspired by
 - If I only train few songs, the results will be also good. 
 - If I train on the whole dataset, the results will become worse. 
 
-#Generalization for ccmixter(50 songs)
+# Generalization for ccmixter(50 songs)
 - ccmixter has 3 Children's songs, two songs as training data and the other as testing data, the result on testing data is also very good even though is slightly worse than training data.
 - Three rap songs can also generalize well
 - Two songs have different background music and same lyrics(two same voice), generalization is ok, ok, but worse than above two situations
@@ -108,8 +108,10 @@ my code is first inspired by
 # Notice
  - if i set residual channel to 256, the loss will stuck into 4.5,(actually, loss returns from 3.5)
  - if you design custom model, you should use self.convs = nn.ModuleList() instead of self.convs = dict(). If you use the latter way, the pytorch cannot update the weight in the dict() 
+ - A(background music) + B(voice) = C(mix music)
 
 # ToDo
  - ~~better learning rate decay strategy, speed up the training process.~~
  - ~~bigger dataset()~~
  - try to use better method for training ccmixter corpus(50 songs)
+ - Short-time Fourier transform
