@@ -1,4 +1,4 @@
-my code is first inspired by
+# my code is first inspired by
     https://github.com/ibab/tensorflow-wavenet
     https://github.com/soobinseo/wavenet
     https://github.com/f90/Wave-U-Net
