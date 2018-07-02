@@ -1,23 +1,19 @@
 from __future__ import print_function
-import argparse
+
+import os
+import time
+
+import numpy as np
+import soundfile as sf
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
-from torchvision import datasets, transforms
-import numpy as np
-import torch.utils.data as utils
-import librosa
-import soundfile as sf
-import time
-import os
-from torch.utils import data
-from wavenet2 import Wavenet
-from transformData import x_mu_law_encode,y_mu_law_encode,mu_law_decode,onehot,cateToSignal
-from readDataset3 import Dataset,Testset,RandomCrop,ToTensor
-from unet import Unet
-import h5py
 
+from torch.utils import data
+from torchvision import transforms
+
+from Dataset.DatasetReg import Dataset, Testset, RandomCrop, ToTensor
+from modelStructure.regwavenet import Wavenet
 # In[2]:
 
 
@@ -28,7 +24,7 @@ dilations = [2 ** i for i in range(9)] * 5  # idea from wavenet, have more recep
 residualDim = 128  #
 skipDim = 512
 shapeoftest = 190500
-songnum=1
+songnum=45
 filterSize = 3
 savemusic='vsCorpus/nus0xtr{}.wav'
 #savemusic0='vsCorpus/nus10xtr{}.wav'
@@ -56,8 +52,14 @@ device = torch.device("cuda" if use_cuda else "cpu")
 
 
 transform=transforms.Compose([RandomCrop(pad=pad),ToTensor()])
-training_set = Dataset(np.arange(0, songnum), np.arange(0, songnum), 'ccmixter3/x/', 'ccmixter3/y/',pad=pad,transform=transform)
-validation_set = Testset(np.arange(0, songnum), 'ccmixter3/x/',pad=pad)
+#training_set = Dataset(np.array([6,7,8,9,11,12,14,16,26]), np.array([6,7,8,9,11,12,14,16,26]), 'ccmixter3/x/', 'ccmixter3/y/',pad=pad,transform=transform)
+#validation_set = Testset(np.array([6,7,8,9,11,12,14,16,26]), 'ccmixter3/x/',pad=pad)
+#training_set = Dataset(np.array([16,24]), np.array([16,24]), 'ccmixter3/', 'ccmixter3/',pad=pad,transform=transform)
+#validation_set = Testset(np.array([16,24,34]), 'ccmixter3/',pad=pad)
+#training_set = Dataset(np.array([14,39]), np.array([14,39]), 'ccmixter3/', 'ccmixter3/',pad=pad,transform=transform)
+#validation_set = Testset(np.array([14,39,43]), 'ccmixter3/',pad=pad)
+training_set = Dataset(np.array([0]), np.array([0]), 'ccmixter3/', 'ccmixter3/',pad=pad,transform=transform)
+validation_set = Testset(np.array([0]), 'ccmixter3/',pad=pad)
 loadtr = data.DataLoader(training_set, batch_size=1,shuffle=True,num_workers=1)  # pytorch dataloader, more faster than mine
 loadval = data.DataLoader(validation_set,batch_size=1,num_workers=1)
 
@@ -67,12 +69,12 @@ loadval = data.DataLoader(validation_set,batch_size=1,num_workers=1)
 model = Wavenet(pad, skipDim, quantization_channels, residualDim, dilations,device)
 model = nn.DataParallel(model)
 model = model.cuda()
-criterion = nn.CrossEntropyLoss()
+criterion = nn.MSELoss()
 # in wavenet paper, they said crossentropyloss is far better than MSELoss
 optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
 # use adam to train
 
-maxloss=np.zeros(songnum)+100
+maxloss=np.zeros(50)+100
 # In[7]:
 
 start_epoch=0
@@ -97,41 +99,42 @@ def test(epoch):  # testing data
     model.eval()
     start_time = time.time()
     with torch.no_grad():
-        for iloader, (xtrain, ytrain) in enumerate(loadval):
+        for iloader, xtrain, ytrain in loadval:
+            iloader=iloader.item()
             listofpred0 = []
             cnt,aveloss=0,0
             for ind in range(pad, xtrain.shape[-1] - pad - sampleSize, sampleSize):
                 output0 = model(xtrain[:, :, ind - pad:ind + sampleSize + pad].to(device))
-                loss = criterion(output0, (ytrain[:, ind:ind + sampleSize].to(device)))
-                pred0 = output0.max(1, keepdim=True)[1].cpu().numpy().reshape(-1)
+                loss = criterion(output0, (ytrain[:,:,ind:ind + sampleSize].to(device)))
+                pred0 = output0.cpu().numpy()
                 listofpred0.append(pred0)
                 cnt+=1
                 aveloss+=loss.item()
             aveloss /= cnt
-            print('loss for validation:{},num{},epoch{}'.format(aveloss / cnt, iloader,epoch))
-            if(aveloss < maxloss[iloader]):
-                maxloss[iloader] = aveloss
-                ans0 = mu_law_decode(np.concatenate(listofpred0))
-                if not os.path.exists('vsCorpus/'): os.makedirs('vsCorpus/')
-                sf.write(savemusic.format(iloader), ans0, sample_rate)
-                print('test stored done', np.round(time.time() - start_time))
+            print('loss for validation:{},num{},epoch{}'.format(aveloss, iloader,epoch))
+            #if(aveloss < maxloss[iloader]):
+            maxloss[iloader] = aveloss
+            ans0 = np.concatenate(listofpred0)
+            if not os.path.exists('vsCorpus/'): os.makedirs('vsCorpus/')
+            sf.write(savemusic.format(iloader), ans0, sample_rate)
+            print('test stored done', np.round(time.time() - start_time))
 
 
 
 def train(epoch):  # training data, the audio except for last 15 seconds
-    for iloader, xtrain, ytrain in enumerate(loadtr):
+    for iloader,xtrain, ytrain in loadtr:
         startx = np.random.randint(0,sampleSize)
-        idx = np.arange(startx+pad, xtrain.shape[-1]//2 - pad - sampleSize, sampleSize)
+        idx = np.arange(startx + pad, xtrain.shape[-1] - pad - sampleSize, sampleSize * 3)
         np.random.shuffle(idx)
-        lens = 100
+        lens = 25
         idx = idx[:lens]
         cnt, aveloss = 0, 0
         start_time = time.time()
         for i, ind in enumerate(idx):
             model.train()
-            factor=np.random.uniform(low=0.7, high=1.0)
-            data = (factor*xtrain[:, :, ind - pad:ind + sampleSize + pad]).to(device)
-            target0 = ytrain[:, ind:ind + sampleSize].to(device)
+            #print(xtrain.shape)
+            data = (xtrain[:, :, ind - pad:ind + sampleSize + pad]).to(device)
+            target0 = ytrain[:,:, ind:ind + sampleSize].to(device)
             output = model(data)
             loss = criterion(output, target0)
             aveloss+=loss
@@ -164,5 +167,7 @@ def train(epoch):  # training data, the audio except for last 15 seconds
 
 print('training...')
 for epoch in range(100000):
+    #test(epoch + start_epoch)
     train(epoch+start_epoch)
-    if epoch % 4 == 0 and epoch > 0: test(epoch)
+    if (epoch+start_epoch) % 16 == 0 and (epoch+start_epoch) > 0:
+        test(epoch+start_epoch)

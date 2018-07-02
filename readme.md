@@ -8,6 +8,11 @@
     facebook paper https://arxiv.org/pdf/1805.07848.pdf
     Spotify paper wave-U-net https://arxiv.org/pdf/1806.03185.pdf
 
+#  domain confusion loss
+- which is used by facebook paper
+- I just implemented the domain confusion loss in https://github.com/ShichengChen/Domain-Adversarial-Training-of-Neural-Networks
+- but I think I cannot use the network confusion loss for my problem, since I need the domain information when I generate the music without voice. I should keep the music have same type.
+
 # Using pyTorch to implement the WaveNet for vocal separation
 # remove the voice from songs
 
