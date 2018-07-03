@@ -1,122 +1,103 @@
-# my code is first inspired by
-    https://github.com/ibab/tensorflow-wavenet
-    https://github.com/soobinseo/wavenet
-    https://github.com/f90/Wave-U-Net
+# Audio Source Separation
+- get accompaniment and vocals
 
 # Paper
-    WaveNet,deepmind paper https://arxiv.org/pdf/1609.03499.pdf
-    facebook paper https://arxiv.org/pdf/1805.07848.pdf
-    Spotify paper wave-U-net https://arxiv.org/pdf/1806.03185.pdf
+- [WAVENET](https://arxiv.org/pdf/1609.03499.pdf) 
+- [A Universal Music Translation Network](https://arxiv.org/pdf/1805.07848.pdf), shorten to facebook net
+- [WAVE-U-NET](https://arxiv.org/pdf/1806.03185.pdf)
 
-#  domain confusion loss
-- which is used by facebook paper
-- I just implemented the domain confusion loss in https://github.com/ShichengChen/Domain-Adversarial-Training-of-Neural-Networks
-- but I think I cannot use the network confusion loss for my problem, since I need the domain information when I generate the music without voice. I should keep the music have same type.
+# WaveNet
+## model structure
+![wavenet structure](https://i.stack.imgur.com/t7qkv.png "wavenet structure")
+- encode **audio** by [mu-law](https://en.wikipedia.org/wiki/%CE%9C-law_algorithm) and then quantize it to 256 possible values
+- **input** is quantized audio array, for example, input.shape = L. L is the length of the audio.
+- Causal Conv is norm convolutional layer
+![wavenet structure](http://benanne.github.io/images/wavenet.png "wavenet structure")
+- Dilated Conv is shown as above figure.
+- left yellow circle is tanh fuction and right yellow circle is sigmoid
+- right circle denotes an element-wise multiplication operator
+- tanh(DilatedConv0(x))*sigmoid(DilatedConv1(x))
+- green squire are two norm convolutional layers with 1*1 kernel size
+- one convolutional layer's output is followed by the residual summation
+- the other convolutional layer's output is skip connections
+- k is the layer or block index
+- each block has a skip connection, red circle sum these skip connections up
+- and then relu function, 1*1 kernel conv layer, relu, 1*1 conv layer and a softmax
+- **output** is quantized audio array, for example, output shape is 256*L. 256 is 256 possible quantized values and L is the length of the audio.
+- map output to [-1,1] and then decode it to raw audio array.
 
-# Using pyTorch to implement the WaveNet for vocal separation
-# remove the voice from songs
+## WaveNet for Audio Source Separation
+A is mix audio, B is vocals and C is accompaniment.
+the deepmind wavenet's input and label are only A
+I use A as input and B as label
+![wavenet structure](https://raw.githubusercontent.com/soobinseo/wavenet/master/png/wavenet.png)
+as shown in above figure, I slightly changed the dilated conv layers
+I use A[0:100] to predict B[50] instead of using A[0:50] to predict A[50]
 
-  - vstrain.ipynb
-     - all the main code is in this file, you can see more comments on this file
-  - vstrainTowloss.py(now I do not use this, I will continue to test this in the future)
-     - see as above file except that label are instrument and voice
-  - trainunet.py
-     - use waveunet to train the model, not exact unet, biggest change in the file is use Short-time Fourier transform to deal with data
-  - DatasetWaveUnet.py
-    - use librosa stft to deal with data
-  - readDataset3.py
-    - use h5py to speed up, read instument file and voice file
-  - transformData.py 
-    - provides mu_law encode and decode functions(actually, pytorch have these functions)
-  - wavenet.py
-    - structure of wavenet. learned from https://arxiv.org/pdf/1609.03499.pdf
-    - have dilated cnn layers, you can learn dilated from    https://github.com/vdumoulin/conv_arithmetic/blob/master/README.md
-    - It's not easy to train, since there are sigmoid and tanh
-  - wavenet2.py
-    - structure of wavenet. learned from https://arxiv.org/pdf/1805.07848.pdf
-    - replace sigmoid and tanh by relu, remove element-wise multiplication.
-    - add relu at the beginning of every residual blocks
-    - very easy to train and the results are good. 
-    - if the music is not hard, such as many repeat rhythm
-    - I can get good result for only instrument music by only 3 epochs(about 3000 iterations) for one song.
-    - if the music is hard, they take electro acoustics as instrument
-    - I need to train for 10 epochs for one song
-  - wavenet3.py
-    - structure of wavenet. inspired by https://github.com/f90/Wave-U-Net
-    - same as wavenet2 except that I use two loss, one loss for instument and the other one for voice
-    - two loss indeed have help, for a easy song, only 3 epochs(3000 iterations), the result can be good. voice file + instrument file = mix file. In other words, I add a new restriction for my network 
-  - unet.py
-     - structure of unet. learned from https://arxiv.org/pdf/1806.03185.pdf
-     - I remove dilated cnn layers by normal cnn layers, 
-  - clean_ccmixter_corpus.ipynb, clean_ccmixter_corpus2.ipynb
-     - transform ccmixter from (audio time series, either stereo or mono) to mono
-     - save as h5 format by h5py
-  - plotLoss.ipynb
-    - when you training the model, you can use this file to visualize model's loss trend 
-    - babysit the model
-    - use linear regression to fit the loss
-  - useAandBsimultaneously.ipynb
-    - ongoing task, use other method to remove the music from songs
-  - originalResults
-    - training set, testing set and some results 
- - lossRecord
-   - model will write the loss file to this folder
+# A Universal Music Translation Network
+## model structure[facebook net]
+![facebook net structure](https://cdn-images-1.medium.com/max/1600/1*EJWLapPO2Y88u3AYwstvmQ.png)
+![facebook net structure](https://cdn-images-1.medium.com/max/1600/1*y2FfJ_LZub3oidZ19VVDow.png)
+- The encoder is a fully convolutional network
+- The encode part has three blocks of 10 residual-layers as shwon in the first above figure.
+- the NC Dilated Conv layer is Dilated Conv layer
+- After the three blocks, there is an additional 1*1 layer
+- An average pooling with a kernel size of 800(if sample size for one second is 16000)
+- and then [domain confusion loss](https://arxiv.org/pdf/1505.07818.pdf), I re-implemented the domain confusion in [there](https://github.com/ShichengChen/Domain-Adversarial-Training-of-Neural-Networks)
+- upsampled to the original audio rate using nearest neighbor interpolation
+![wavenet structure](https://camo.githubusercontent.com/37b5bb84ef02a8183b21ca697842693dbfc8b077/68747470733a2f2f64726976652e676f6f676c652e636f6d2f75633f6578706f72743d766965772669643d315a6f2d6335567a504c5345516c445f53794e6f6c793358575330413766693573)
+- The above figure is new version wavenet
+- The encoding audio is used to condition a WaveNet decoder. The conditioning signal is passed through a 1 × 1 layer that is different for each WaveNet layer
+- The WaveNet decoder has 4 blocks of 10 residual-layers
+- The **input** and **output** is quantized using 8-bit mu-law encoding
 
-# Dataset
- - origin_mix.wav(train)
- - origin_vocal.wav(label)
- - pred_mix.wav(test) (for one song, I get a good result)
- - ccmixter corpus (for 50 songs, I still try to improve my model and learning strategy)
+## Data Augmentation
+- uniformly select a segment of length between 0.25 and 0.5 seconds
+- modulate its pitch by a random number between -0.5 and 0.5 of half-steps
 
-# Training data and testing data
-- first half of the songs as training data, the last half of the songs as testing data.
+## Facebook Net for Audio Source Separation
+- **structure A**, make the decoding part to be same as encoding, remove downsample and upsample, remove confusion loss.  
+- I used data augmentation strategy from u-wave-net paper. For example, A is mix audio, B is vocals and C is accompaniment. B * factor0 + C * factor1 = newA, I used A as input and C*factor1 as label. Factor0 and factor1 is chosen uniformly from the interval [0.7, 1.0].
+- I used ccmixter as dataset.
 
-# Data Augmentation
-- multiply source signals with a factor chosen uniformly from the interval [0.7, 1.0] and set the input mixture as the sum of source signals, which is learned from Spotify paper. 
-- The result is so good by using this type of data augmentation. Even the loss become bigger, however, the voice became less. The model can generalize better.
-
-# Result for one song
-- the model is trained on training set except for last 15 seconds
-- bestResultonTestingSet.wav (testing set)
-- bestResultonTrainingSet.wav (training set except for last 15 seconds)
-- bestResultonValidation.wav (last 15 seconds for training set)
-- there are still some noise and a little music on audios on validation and testing set
-
-# Result for ccmixter(50 songs)
-- If I only train few songs, the results will be also good. 
-- If I train on the whole dataset, the results will become worse. 
-
-# Generalization for ccmixter(50 songs)
+##### Result for this structure
 - ccmixter has 3 Children's songs, two songs as training data and the other as testing data, the result on testing data is also very good even though is slightly worse than training data.
 - Three rap songs can also generalize well
 - Two songs have different background music and same lyrics(two same voice), generalization is ok, ok, but worse than above two situations
-- first 45 songs for training and last 5 songs for testing, the results are still not good.
+- first 45 songs for training and last 5 songs for testing, the results is still not good.
+- If I chose 9 different types of music, even in training set, the result is not good. I am trying to solve this problem. 
 
-# Loss for one song
- - best loss: around 1
+##### some other tests
+- add downsample and upsample, add confusion loss, use short time fourier transform to preprocess the raw audio. The results are worse than **structure A**.
 
-# Loss for ccmixter
- - around 3
+##### domain confusion loss
+- I just implemented the domain confusion loss in [there](https://github.com/ShichengChen/Domain-Adversarial-Training-of-Neural-Networks).
+- My result is better than original paper's result, but when I add to **structure A**, the result became very bad. Because I think that I need the domain information when I generate the music without voice. I should keep the original music and accompaniment having same type.
 
-# hyper-parameters
- - sampleSize=16000#recommended by facebook paper
- - sample_rate=16000#the length of audio for one second
- - quantization_channels=256 #discretize the value to 256 numbers
- - ~~dilations=[2**i for i in range(9)]*7#recommended by facebook paper~~
- - dilations=[2**i for i in range(9)]*5 for quicker test
- - residualDim=128#recommended by facebook paper
- - skipDim=512
- - initFilterSize=25#recommened by https://github.com/f90/Wave-U-Net, help me remove a lot of noise
- - other filterSize=3
- - learning rate=1e-3 adam, decay factor of 0.98 every 10000 samples#recommended by facebook paper
- 
-# Notice
- - if i set residual channel to 256, the loss will stuck into 4.5,(actually, loss returns from 3.5)
- - if you design custom model, you should use self.convs = nn.ModuleList() instead of self.convs = dict(). If you use the latter way, the pytorch cannot update the weight in the dict() 
- - A(background music) + B(voice) = C(mix music)
+##### TODO
+ - try to add decoding part to structure A. The bottleneck during inference is the
+autoregressive process done by the WaveNet, try to use dedicated CUDA kernels [code](https://github.com/NVIDIA/nv-wavenet/tree/master/pytorch) by
+NVIDIA
 
-# ToDo
- - ~~better learning rate decay strategy, speed up the training process.~~
- - ~~bigger dataset()~~
- - try to use better method for training ccmixter corpus(50 songs)
- - Short-time Fourier transform
+# [U-Wave-Net](https://github.com/f90/Wave-U-Net)
+## Model Structure
+![uwavenet](https://raw.githubusercontent.com/f90/Wave-U-Net/master/waveunet.png)
+- they use LeakyReLU activation except for the final one, which uses tanh
+- downsampling discards features for every other time step to halve the time resolution
+- Concat(x) concatenates the current high-level features with more local features x
+- since they do not padding zeros and so they need to crop for concatenating.
+
+## Data Augmentation
+- A is mix audio, B is vocals and C is accompaniment. 
+- B * factor0 + C * factor1 = newA
+- A as input and C*factor1 as label
+- Factor0 and factor1 is chosen uniformly from the interval [0.7, 1.0].   
+
+## result for the [code](https://github.com/f90/Wave-U-Net)
+- The result is better than mine results
+    
+
+
+
+
+
