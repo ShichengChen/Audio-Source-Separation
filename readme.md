@@ -5,35 +5,51 @@
 - [WAVENET](https://arxiv.org/pdf/1609.03499.pdf) 
 - [A Universal Music Translation Network](https://arxiv.org/pdf/1805.07848.pdf), shorten to facebook net
 - [WAVE-U-NET](https://arxiv.org/pdf/1806.03185.pdf)
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
 
 # WaveNet
 ## model structure
 ![wavenet structure](https://i.stack.imgur.com/t7qkv.png "wavenet structure")
-- encode **audio** by [mu-law](https://en.wikipedia.org/wiki/%CE%9C-law_algorithm) and then quantize it to 256 possible values
-- **input** is quantized audio array, for example, input.shape = L. L is the length of the audio.
-- Causal Conv is norm convolutional layer
+- Encode **audio** by [mu-law](https://en.wikipedia.org/wiki/%CE%9C-law_algorithm) and then quantize it to 256 possible values
+- **Input** is a quantized audio array, for example, input.shape = L. L is the length of the audio.
+- Causal Conv is a norm convolutional layer
 ![wavenet structure](http://benanne.github.io/images/wavenet.png "wavenet structure")
 - Dilated Conv is shown as above figure.
-- left yellow circle is tanh fuction and right yellow circle is sigmoid
-- right circle denotes an element-wise multiplication operator
-- tanh(DilatedConv0(x))*sigmoid(DilatedConv1(x))
-- green squire are two norm convolutional layers with 1*1 kernel size
-- one convolutional layer's output is followed by the residual summation
-- the other convolutional layer's output is skip connections
-- k is the layer or block index
-- each block has a skip connection, red circle sum these skip connections up
-- and then relu function, 1*1 kernel conv layer, relu, 1*1 conv layer and a softmax
-- **output** is quantized audio array, for example, output shape is 256*L. 256 is 256 possible quantized values and L is the length of the audio.
-- map output to [-1,1] and then decode it to raw audio array.
+- Left yellow circle is a tanh fuction and right yellow circle is sigmoid
+- Red circle denotes an element-wise multiplication operator  Tanh(DilatedConv0(x))*sigmoid(DilatedConv1(x))
+- Green square are two norm convolutional layers with 1*1 kernel size
+- One convolutional layer's output is followed by the residual summation, and the other convolutional layer's output is skip connections
+- K is the layer or block index
+- Each block has a skip connection, red circle sums these skip connections up
+- And then relu function, 1 * 1 kernel conv layer, relu, 1 * 1 conv layer and a softmax
+- **Output** is quantized audio array, for example, output shape is 256 * L. 256 is 256 possible quantized values and L is the length of the audio.
+- Map output to [-1,1] and then decode it to raw audio array.
 
 ## WaveNet for Audio Source Separation
-A is mix audio, B is vocals and C is accompaniment.
-the deepmind wavenet's input and label are only A
-I use A as input and B as label
+- A is mix audio, B is vocals and C is accompaniment.
+- The deepmind wavenet's input and label are only A
+- I use A as input and B as label
 ![wavenet structure](https://raw.githubusercontent.com/soobinseo/wavenet/master/png/wavenet.png)
-as shown in above figure, I slightly changed the dilated conv layers
-I use A[0:100] to predict B[50] instead of using A[0:50] to predict A[50]
-
+- As shown in above figure, I slightly changed the dilated conv layers
+- I use A[0:100] to predict B[50] instead of using A[0:50] to predict A[50]
+##
 # A Universal Music Translation Network
 ## model structure[facebook net]
 ![facebook net structure](https://cdn-images-1.medium.com/max/1600/1*EJWLapPO2Y88u3AYwstvmQ.png)
