@@ -49,7 +49,7 @@
 - the NC Dilated Conv layer is Dilated Conv layer
 - After the three blocks, there is an additional 1*1 layer
 - An average pooling with a kernel size of 800(if sample size for one second is 16000) follows
-- And then [domain confusion loss](https://arxiv.org/pdf/1505.07818.pdf), I re-implemented the domain confusion in [there](https://github.com/ShichengChen/Domain-Adversarial-Training-of-Neural-Networks).
+- And then [domain confusion loss](https://arxiv.org/pdf/1505.07818.pdf), I re-implemented a domain confusion in [there](https://github.com/ShichengChen/Domain-Adversarial-Training-of-Neural-Networks).
 - Upsampled to the original audio rate using nearest neighbor interpolation
 ![wavenet structure](https://camo.githubusercontent.com/37b5bb84ef02a8183b21ca697842693dbfc8b077/68747470733a2f2f64726976652e676f6f676c652e636f6d2f75633f6578706f72743d766965772669643d315a6f2d6335567a504c5345516c445f53794e6f6c793358575330413766693573)
 - The above figure is new version wavenet
@@ -61,37 +61,41 @@
 - Uniformly select a segment of length between 0.25 and 0.5 seconds
 - Modulate its pitch by a random number between -0.5 and 0.5 of half-steps
 
-## Facebook Net for Audio Source Separation
-- **structure A**, make the decoding part to be same as encoding, remove downsample and upsample, remove confusion loss.  
-- I used data augmentation strategy from u-wave-net paper. For example, A is mix audio, B is vocals and C is accompaniment. B * factor0 + C * factor1 = newA, I used A as input and C*factor1 as label. Factor0 and factor1 is chosen uniformly from the interval [0.7, 1.0].
-- I used ccmixter as dataset.
+<div style="page-break-after: always;"></div>
 
-##### Result for this structure
-- ccmixter has 3 Children's songs, two songs as training data and the other as testing data, the result on testing data is also very good even though is slightly worse than training data.
-- Three rap songs can also generalize well
-- Two songs have different background music and same lyrics(two same voice), generalization is ok, ok, but worse than above two situations
-- first 45 songs for training and last 5 songs for testing, the results is still not good.
+## Facebook Net for Audio Source Separation
+- **Structure A**, I made the decoding part to be same as encoding, removed downsample and upsample, removed confusion loss.  
+- I used data augmentation strategy from u-wave-net paper. For example, A is mix audio, B is vocals and C is accompaniment. B * factor0 + C * factor1 = newA, I used A as input and C*factor1 as label. Factor0 and factor1 is chosen uniformly from the interval [0.7, 1.0].
+- I used Ccmixter as dataset.
+
+#### Result for this structure
+- Ccmixter has 3 Children's songs, two songs as training data and the other as testing data, the result on testing data is also very good even though is slightly worse than training data.
+- Three rap songs can also generalize well.
+- Two songs have different background music and same lyrics(two same voice), generalization is also ok, but worse than above two situations
+- First 45 songs for training and last 5 songs for testing, the results is still not good.
 - If I chose 9 different types of music, even in training set, the result is not good. I am trying to solve this problem. 
 
-##### some other tests
-- add downsample and upsample, add confusion loss, use short time fourier transform to preprocess the raw audio. The results are worse than **structure A**.
+#### Some other tests
+- Add downsample and upsample, add confusion loss, use short time fourier transform to preprocess the raw audio. The results are worse than **structure A**.
 
-##### domain confusion loss
-- I just implemented the domain confusion loss in [there](https://github.com/ShichengChen/Domain-Adversarial-Training-of-Neural-Networks).
+#### Domain confusion loss
+- I implemented a domain confusion loss in [there](https://github.com/ShichengChen/Domain-Adversarial-Training-of-Neural-Networks).
 - My result is better than original paper's result, but when I add to **structure A**, the result became very bad. Because I think that I need the domain information when I generate the music without voice. I should keep the original music and accompaniment having same type.
 
-##### TODO
- - try to add decoding part to structure A. The bottleneck during inference is the
+#### TODO
+ - Try to add decoding part to structure A. The bottleneck during inference is the
 autoregressive process done by the WaveNet, try to use dedicated CUDA kernels [code](https://github.com/NVIDIA/nv-wavenet/tree/master/pytorch) by
 NVIDIA
+
+<div style="page-break-after: always;"></div>
 
 # [U-Wave-Net](https://github.com/f90/Wave-U-Net)
 ## Model Structure
 ![uwavenet](https://raw.githubusercontent.com/f90/Wave-U-Net/master/waveunet.png)
-- they use LeakyReLU activation except for the final one, which uses tanh
-- downsampling discards features for every other time step to halve the time resolution
-- Concat(x) concatenates the current high-level features with more local features x
-- since they do not padding zeros and so they need to crop for concatenating.
+- Use LeakyReLU activation except for the final one, which uses tanh
+- Downsampling discards features for every other time step to halve the time resolution
+- Concat concatenates the current high-level features with more local features x
+- Since they do not padding zeros and so they need to crop for concatenating.
 
 ## Data Augmentation
 - A is mix audio, B is vocals and C is accompaniment. 
@@ -99,7 +103,7 @@ NVIDIA
 - A as input and C*factor1 as label
 - Factor0 and factor1 is chosen uniformly from the interval [0.7, 1.0].   
 
-## result for the [code](https://github.com/f90/Wave-U-Net)
+## Result for the [code](https://github.com/f90/Wave-U-Net)
 - The result is better than mine results
     
 
