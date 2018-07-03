@@ -1,28 +1,14 @@
 # Audio Source Separation
-- get accompaniment and vocals
+- obtain accompaniment and vocals from mix music
 
 # Paper
 - [WAVENET](https://arxiv.org/pdf/1609.03499.pdf) 
-- [A Universal Music Translation Network](https://arxiv.org/pdf/1805.07848.pdf), shorten to facebook net
+- [A Universal Music Translation Network](https://arxiv.org/pdf/1805.07848.pdf)
 - [WAVE-U-NET](https://arxiv.org/pdf/1806.03185.pdf)
-&nbsp;
-&nbsp;
-&nbsp;
-&nbsp;
-&nbsp;
-&nbsp;
-&nbsp;
-&nbsp;
-&nbsp;
-&nbsp;
-&nbsp;
-&nbsp;
-&nbsp;
-&nbsp;
-&nbsp;
-&nbsp;
-&nbsp;
-&nbsp;
+
+
+<div style="page-break-after: always;"></div>
+
 
 # WaveNet
 ## model structure
@@ -42,6 +28,8 @@
 - **Output** is quantized audio array, for example, output shape is 256 * L. 256 is 256 possible quantized values and L is the length of the audio.
 - Map output to [-1,1] and then decode it to raw audio array.
 
+<div style="page-break-after: always;"></div>
+
 ## WaveNet for Audio Source Separation
 - A is mix audio, B is vocals and C is accompaniment.
 - The deepmind wavenet's input and label are only A
@@ -49,7 +37,9 @@
 ![wavenet structure](https://raw.githubusercontent.com/soobinseo/wavenet/master/png/wavenet.png)
 - As shown in above figure, I slightly changed the dilated conv layers
 - I use A[0:100] to predict B[50] instead of using A[0:50] to predict A[50]
-##
+
+<div style="page-break-after: always;"></div>
+
 # A Universal Music Translation Network
 ## model structure[facebook net]
 ![facebook net structure](https://cdn-images-1.medium.com/max/1600/1*EJWLapPO2Y88u3AYwstvmQ.png)
@@ -58,18 +48,18 @@
 - The encode part has three blocks of 10 residual-layers as shwon in the first above figure.
 - the NC Dilated Conv layer is Dilated Conv layer
 - After the three blocks, there is an additional 1*1 layer
-- An average pooling with a kernel size of 800(if sample size for one second is 16000)
-- and then [domain confusion loss](https://arxiv.org/pdf/1505.07818.pdf), I re-implemented the domain confusion in [there](https://github.com/ShichengChen/Domain-Adversarial-Training-of-Neural-Networks)
-- upsampled to the original audio rate using nearest neighbor interpolation
+- An average pooling with a kernel size of 800(if sample size for one second is 16000) follows
+- And then [domain confusion loss](https://arxiv.org/pdf/1505.07818.pdf), I re-implemented the domain confusion in [there](https://github.com/ShichengChen/Domain-Adversarial-Training-of-Neural-Networks).
+- Upsampled to the original audio rate using nearest neighbor interpolation
 ![wavenet structure](https://camo.githubusercontent.com/37b5bb84ef02a8183b21ca697842693dbfc8b077/68747470733a2f2f64726976652e676f6f676c652e636f6d2f75633f6578706f72743d766965772669643d315a6f2d6335567a504c5345516c445f53794e6f6c793358575330413766693573)
 - The above figure is new version wavenet
 - The encoding audio is used to condition a WaveNet decoder. The conditioning signal is passed through a 1 × 1 layer that is different for each WaveNet layer
 - The WaveNet decoder has 4 blocks of 10 residual-layers
-- The **input** and **output** is quantized using 8-bit mu-law encoding
+- The **input** and **output** are quantized using 8-bit mu-law encoding
 
 ## Data Augmentation
-- uniformly select a segment of length between 0.25 and 0.5 seconds
-- modulate its pitch by a random number between -0.5 and 0.5 of half-steps
+- Uniformly select a segment of length between 0.25 and 0.5 seconds
+- Modulate its pitch by a random number between -0.5 and 0.5 of half-steps
 
 ## Facebook Net for Audio Source Separation
 - **structure A**, make the decoding part to be same as encoding, remove downsample and upsample, remove confusion loss.  
