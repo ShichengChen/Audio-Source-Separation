@@ -42,10 +42,10 @@
 ![wavenet structure](http://benanne.github.io/images/wavenet.png "wavenet structure")
 - Dilated Conv is shown as above figure.
 - Left yellow circle is a tanh fuction and right yellow circle is sigmoid
-- Red circle denotes an element-wise multiplication operator  Tanh(DilatedConv0(x))*sigmoid(DilatedConv1(x))
-- Green square are two norm convolutional layers with 1*1 kernel size
+- Red circle denotes an element-wise multiplication operator  Tanh(DilatedConv0(x)) * sigmoid(DilatedConv1(x))
+- Green square are two norm convolutional layers with 1 * 1 kernel size
 - One convolutional layer's output is followed by the residual summation, and the other convolutional layer's output is skip connections
-- K is the layer or block index
+- K is the layer
 - Each block has a skip connection, red circle sums these skip connections up
 - And then relu function, 1 * 1 kernel conv layer, relu, 1 * 1 conv layer and a softmax
 - **Output** is quantized audio array, for example, output shape is 256 * L. 256 is 256 possible quantized values and L is the length of the audio.
@@ -70,7 +70,7 @@
 - The encoder is a fully convolutional network
 - The encode part has three blocks of 10 residual-layers as shwon in the first above figure.
 - the NC Dilated Conv layer is Dilated Conv layer
-- After the three blocks, there is an additional 1*1 layer
+- After the three blocks, there is an additional 1 * 1 layer
 - An average pooling with a kernel size of 800(if sample size for one second is 16000) follows
 - And then [domain confusion loss](https://arxiv.org/pdf/1505.07818.pdf), I re-implemented a domain confusion in [there](https://github.com/ShichengChen/Domain-Adversarial-Training-of-Neural-Networks).
 - Upsampled to the original audio rate using nearest neighbor interpolation
@@ -88,7 +88,7 @@
 
 ## Facebook Net for Audio Source Separation
 - **Structure A**, I made the decoding part to be same as encoding, removed downsample and upsample, removed confusion loss.  
-- I used data augmentation strategy from u-wave-net paper. For example, A is mix audio, B is vocals and C is accompaniment. B * factor0 + C * factor1 = newA, I used A as input and C*factor1 as label. Factor0 and factor1 is chosen uniformly from the interval [0.7, 1.0].
+- I used data augmentation strategy from u-wave-net paper. For example, A is mix audio, B is vocals and C is accompaniment. B * factor0 + C * factor1 = newA, I used newA as input and C*factor1 as label. Factor0 and factor1 is chosen uniformly from the interval [0.7, 1.0].
 - I used Ccmixter as dataset. Ccmixter has 3 Children's songs, two songs as training data and the other as testing data, the result on testing data is also very good even though is slightly worse than training data.
 - Three rap songs can also generalize well.
 - Two songs have different background music and same lyrics(two same voice), generalization is also ok, but worse than above two situations
