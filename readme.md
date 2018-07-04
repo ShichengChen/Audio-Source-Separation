@@ -11,7 +11,6 @@
 # Audio Source Separation
 - obtain accompaniment and vocals from mix music
 
-<a name="Paper"/>
 # Paper
 - [WAVENET](https://arxiv.org/pdf/1609.03499.pdf) 
 - [A Universal Music Translation Network](https://arxiv.org/pdf/1805.07848.pdf)
