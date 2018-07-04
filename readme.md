@@ -1,8 +1,8 @@
 # Table of Contents  
-   * [Audio Source Separation](# Audio Source Separation)
-   * [Paper](# Paper)
-   * [WaveNet](# WaveNet)
-   * [A Universal Music Translation Network](# A Universal Music Translation Network)
+   * [Audio Source Separation](#audio-source-separation)
+   * [Paper](#paper)
+   * [WaveNet](#waveNet)
+   * [A Universal Music Translation Network](#a-universal-music-translation-network)
 
 # Table of Contents
 1. [Example](#example)
