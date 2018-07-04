@@ -13,9 +13,9 @@
         * [Domain confusion loss](#domain-confusion-loss)
         * [TODO for facebook net](#todo-for-facebook-net)
    * [U-Wave-Net](#u-wave-net)
-        * [U-Wave-Net Structure](#u-wave-net-structure)
-        * [Data Augmentation for U-Wave-Net](#data-augmentation-for-u-wave-net)
-        * [Result for the UWaveNet](#result-for-the-uwavenet)
+     * [U-Wave-Net Structure](#u-wave-net-structure)
+     * [Data Augmentation for U-Wave-Net](#data-augmentation-for-u-wave-net)
+     * [Result for the UWaveNet](#result-for-the-uwavenet)
    * [DeepConvSep](#deepconvsep)
 
 <div style="page-break-after: always;"></div>
