@@ -2,18 +2,18 @@
    * [Audio Source Separation](#audio-source-separation)
    * [Reference](#reference)
    * [WaveNet](#wavenet)
-     * [model structure for WaveNet](#model-structure-for-wavenet) 
+     * [WaveNet structure](#wavenet-structure) 
      * [WaveNet for Audio Source Separation](#wavenet-for-audio-source-separation) 
    * [A Universal Music Translation Network](#a-universal-music-translation-network)
-     * [facebook net model structure](#facebook-net-model-structure) 
-     * [Data Augmentation](#data-augmentation)
+     * [facebook net structure](#facebook-net-structure) 
+     * [Data Augmentation for FacebookNet](#data-augmentation-for-facebooknet)
      * [Facebook Net for Audio Source Separation](#facebook-net-for-audio-source-separation)
         * [Result for Facebook Net](#result-for-facebook-net)
         * [Some other tests](#some-other-tests)
         * [Domain confusion loss](#domain-confusion-loss)
         * [TODO](#todo)
    * [U-Wave-Net](#u-wave-net)
-        * [U-Wave-Net Model Structure](#u-wave-net-model-structure)
+        * [U-Wave-Net Structure](#u-wave-net-structure)
         * [Data Augmentation for U-Wave-Net](#data-augmentation-for-u-wave-net)
         * [Result for the UWaveNet](#result-for-the-uwavenet)
 
@@ -32,7 +32,7 @@
 
 
 # WaveNet
-## model structure for WaveNet
+## WaveNet structure
 ![wavenet structure](https://i.stack.imgur.com/t7qkv.png "wavenet structure")
 - Encode **audio** by [mu-law](https://en.wikipedia.org/wiki/%CE%9C-law_algorithm) and then quantize it to 256 possible values
 - **Input** is a quantized audio array, for example, input.shape = L. L is the length of the audio.
@@ -62,7 +62,7 @@
 <div style="page-break-after: always;"></div>
 
 # A Universal Music Translation Network
-## facebook net model structure
+## facebook net structure
 ![facebook net structure](https://cdn-images-1.medium.com/max/1600/1*EJWLapPO2Y88u3AYwstvmQ.png)
 ![facebook net structure](https://cdn-images-1.medium.com/max/1600/1*y2FfJ_LZub3oidZ19VVDow.png)
 - The encoder is a fully convolutional network
@@ -78,7 +78,7 @@
 - The WaveNet decoder has 4 blocks of 10 residual-layers
 - The **input** and **output** are quantized using 8-bit mu-law encoding
 
-## Data Augmentation
+## Data Augmentation for FacebookNet
 - Uniformly select a segment of length between 0.25 and 0.5 seconds
 - Modulate its pitch by a random number between -0.5 and 0.5 of half-steps
 
@@ -111,7 +111,7 @@ NVIDIA
 <div style="page-break-after: always;"></div>
 
 # [U-Wave-Net](https://github.com/f90/Wave-U-Net)
-## U-Wave-Net Model Structure
+## U-Wave-Net Structure
 ![uwavenet](https://raw.githubusercontent.com/f90/Wave-U-Net/master/waveunet.png)
 - Use LeakyReLU activation except for the final one, which uses tanh
 - Downsampling discards features for every other time step to halve the time resolution
