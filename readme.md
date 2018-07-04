@@ -1,23 +1,28 @@
 # Table of Contents  
    * [Audio Source Separation](#audio-source-separation)
-   * [Paper](#paper)
-   * [WaveNet](#waveNet)
+   * [Reference](#reference)
+   * [WaveNet](#wavenet)
+     * [model structure for WaveNet](#model-structure-for-wavenet) 
+     * [WaveNet for Audio Source Separation](#wavenet-for-audio-source-separation) 
    * [A Universal Music Translation Network](#a-universal-music-translation-network)
+     * [facebook net model structure](#facebook-net-model-structure) 
+     * [Data Augmentation](#data-augmentation)
+     * [Facebook Net for Audio Source Separation](#facebook-net-for-audio-source-separation)
+        * [Result for Facebook Net](#result-for-facebook-net)
+        * [Some other tests](#some-other-tests)
+        * [Domain confusion loss](#domain-confusion-loss)
+        * [TODO](#todo)
+   * [U-Wave-Net](#u-wave-net)
+        * [U-Wave-Net Model Structure](#u-wave-net-model-structure)
+        * [Data Augmentation for U-Wave-Net](#data-augmentation-for-u-wave-net)
+        * [Result for the UWaveNet](#result-for-the-uwavenet)
 
-# Table of Contents
-1. [Example](#example)
-2. [Example2](#example2)
-3. [Third Example](#third-example)
-
-## Example
-## Example2
-## Third Example
-
+<div style="page-break-after: always;"></div>
 
 # Audio Source Separation
-- obtain accompaniment and vocals from mix music
+- Obtain accompaniment and vocals from mix music
 
-# Paper
+# Reference
 - [WAVENET](https://arxiv.org/pdf/1609.03499.pdf) 
 - [A Universal Music Translation Network](https://arxiv.org/pdf/1805.07848.pdf)
 - [WAVE-U-NET](https://arxiv.org/pdf/1806.03185.pdf)
@@ -27,7 +32,7 @@
 
 
 # WaveNet
-## model structure
+## model structure for WaveNet
 ![wavenet structure](https://i.stack.imgur.com/t7qkv.png "wavenet structure")
 - Encode **audio** by [mu-law](https://en.wikipedia.org/wiki/%CE%9C-law_algorithm) and then quantize it to 256 possible values
 - **Input** is a quantized audio array, for example, input.shape = L. L is the length of the audio.
@@ -57,7 +62,7 @@
 <div style="page-break-after: always;"></div>
 
 # A Universal Music Translation Network
-## model structure[facebook net]
+## facebook net model structure
 ![facebook net structure](https://cdn-images-1.medium.com/max/1600/1*EJWLapPO2Y88u3AYwstvmQ.png)
 ![facebook net structure](https://cdn-images-1.medium.com/max/1600/1*y2FfJ_LZub3oidZ19VVDow.png)
 - The encoder is a fully convolutional network
@@ -84,7 +89,7 @@
 - I used data augmentation strategy from u-wave-net paper. For example, A is mix audio, B is vocals and C is accompaniment. B * factor0 + C * factor1 = newA, I used A as input and C*factor1 as label. Factor0 and factor1 is chosen uniformly from the interval [0.7, 1.0].
 - I used Ccmixter as dataset.
 
-#### Result for this structure
+#### 
 - Ccmixter has 3 Children's songs, two songs as training data and the other as testing data, the result on testing data is also very good even though is slightly worse than training data.
 - Three rap songs can also generalize well.
 - Two songs have different background music and same lyrics(two same voice), generalization is also ok, but worse than above two situations
@@ -106,20 +111,20 @@ NVIDIA
 <div style="page-break-after: always;"></div>
 
 # [U-Wave-Net](https://github.com/f90/Wave-U-Net)
-## Model Structure
+## U-Wave-Net Model Structure
 ![uwavenet](https://raw.githubusercontent.com/f90/Wave-U-Net/master/waveunet.png)
 - Use LeakyReLU activation except for the final one, which uses tanh
 - Downsampling discards features for every other time step to halve the time resolution
 - Concat concatenates the current high-level features with more local features x
 - Since they do not padding zeros and so they need to crop for concatenating.
 
-## Data Augmentation
+## Data Augmentation for U-Wave-Net
 - A is mix audio, B is vocals and C is accompaniment. 
 - B * factor0 + C * factor1 = newA
 - A as input and C*factor1 as label
 - Factor0 and factor1 is chosen uniformly from the interval [0.7, 1.0].   
 
-## Result for the [code](https://github.com/f90/Wave-U-Net)
+## Result for the [UWaveNet](https://github.com/f90/Wave-U-Net)
 - The result is better than mine results
     
 
