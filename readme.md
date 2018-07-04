@@ -11,11 +11,12 @@
         * [Result for Facebook Net](#result-for-facebook-net)
         * [Some other tests](#some-other-tests)
         * [Domain confusion loss](#domain-confusion-loss)
-        * [TODO](#todo)
+        * [TODO for facebook net](#todo-for-facebook-net)
    * [U-Wave-Net](#u-wave-net)
         * [U-Wave-Net Structure](#u-wave-net-structure)
         * [Data Augmentation for U-Wave-Net](#data-augmentation-for-u-wave-net)
         * [Result for the UWaveNet](#result-for-the-uwavenet)
+   * [DeepConvSep](#deepconvsep)
 
 <div style="page-break-after: always;"></div>
 
@@ -26,6 +27,7 @@
 - [WAVENET](https://arxiv.org/pdf/1609.03499.pdf) 
 - [A Universal Music Translation Network](https://arxiv.org/pdf/1805.07848.pdf)
 - [WAVE-U-NET](https://arxiv.org/pdf/1806.03185.pdf)
+- https://github.com/MTG/DeepConvSep
 
 
 <div style="page-break-after: always;"></div>
@@ -87,10 +89,7 @@
 ## Facebook Net for Audio Source Separation
 - **Structure A**, I made the decoding part to be same as encoding, removed downsample and upsample, removed confusion loss.  
 - I used data augmentation strategy from u-wave-net paper. For example, A is mix audio, B is vocals and C is accompaniment. B * factor0 + C * factor1 = newA, I used A as input and C*factor1 as label. Factor0 and factor1 is chosen uniformly from the interval [0.7, 1.0].
-- I used Ccmixter as dataset.
-
-#### 
-- Ccmixter has 3 Children's songs, two songs as training data and the other as testing data, the result on testing data is also very good even though is slightly worse than training data.
+- I used Ccmixter as dataset. Ccmixter has 3 Children's songs, two songs as training data and the other as testing data, the result on testing data is also very good even though is slightly worse than training data.
 - Three rap songs can also generalize well.
 - Two songs have different background music and same lyrics(two same voice), generalization is also ok, but worse than above two situations
 - First 45 songs for training and last 5 songs for testing, the results is still not good.
@@ -103,7 +102,7 @@
 - I implemented a domain confusion loss in [there](https://github.com/ShichengChen/Domain-Adversarial-Training-of-Neural-Networks).
 - My result is better than original paper's result, but when I add to **structure A**, the result became very bad. Because I think that I need the domain information when I generate the music without voice. I should keep the original music and accompaniment having same type.
 
-#### TODO
+#### TODO for facebook net
  - Try to add decoding part to structure A. The bottleneck during inference is the
 autoregressive process done by the WaveNet, try to use dedicated CUDA kernels [code](https://github.com/NVIDIA/nv-wavenet/tree/master/pytorch) by
 NVIDIA
@@ -126,6 +125,8 @@ NVIDIA
 
 ## Result for the [UWaveNet](https://github.com/f90/Wave-U-Net)
 - The result is better than mine results
+
+# DeepConvSep
     
 
 
