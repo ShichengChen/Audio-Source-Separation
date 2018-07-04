@@ -1,11 +1,17 @@
-<!-- toc -->
 # Table of Contents  
    * [Audio Source Separation](# Audio Source Separation)
    * [Paper](# Paper)
    * [WaveNet](# WaveNet)
    * [A Universal Music Translation Network](# A Universal Music Translation Network)
-<!-- toc stop -->
 
+# Table of Contents
+1. [Example](#example)
+2. [Example2](#example2)
+3. [Third Example](#third-example)
+
+## Example
+## Example2
+## Third Example
 
 
 # Audio Source Separation
