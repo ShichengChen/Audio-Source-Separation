@@ -1,9 +1,9 @@
 <!-- toc -->
 # Table of Contents  
-   * [Audio Source Separation](# Audio Source Separation)
-   * [Paper](# Paper)
-   * [WaveNet](# WaveNet)
-   * [A Universal Music Translation Network](# A Universal Music Translation Network)
+   * [Audio Source Separation](#Audio Source Separation)
+   * [Paper](#Paper)
+   * [WaveNet](#WaveNet)
+   * [A Universal Music Translation Network](#A Universal Music Translation Network)
 <!-- toc stop -->
 
 
