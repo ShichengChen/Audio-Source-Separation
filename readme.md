@@ -79,6 +79,7 @@
 - The encoding audio is used to condition a WaveNet decoder. The conditioning signal is passed through a 1 × 1 layer that is different for each WaveNet layer
 - The WaveNet decoder has 4 blocks of 10 residual-layers
 - The **input** and **output** are quantized using 8-bit mu-law encoding
+- Loss fuction is softmax
 
 ## Data Augmentation for FacebookNet
 - Uniformly select a segment of length between 0.25 and 0.5 seconds
@@ -116,12 +117,14 @@ NVIDIA
 - Downsampling discards features for every other time step to halve the time resolution
 - Concat concatenates the current high-level features with more local features x
 - Since they do not padding zeros and so they need to crop for concatenating.
+- **Input** and **output** are raw audio.
+- Loss function is mean squared error
 
 ## Data Augmentation for U-Wave-Net
 - A is mix audio, B is vocals and C is accompaniment. 
 - B * factor0 + C * factor1 = newA
 - A as input and C*factor1 as label
-- Factor0 and factor1 is chosen uniformly from the interval [0.7, 1.0].   
+- Factor0 and factor1 is chosen uniformly from the interval [0.7, 1.0].
 
 ## Result for the [UWaveNet](https://github.com/f90/Wave-U-Net)
 - The result is better than mine results
