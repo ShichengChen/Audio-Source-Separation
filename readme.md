@@ -28,7 +28,7 @@
 - [A Universal Music Translation Network](https://arxiv.org/pdf/1805.07848.pdf)
 - [WAVE-U-NET](https://arxiv.org/pdf/1806.03185.pdf)
 - https://github.com/MTG/DeepConvSep
-
+- https://github.com/ShichengChen/WaveUNet
 
 <div style="page-break-after: always;"></div>
 
