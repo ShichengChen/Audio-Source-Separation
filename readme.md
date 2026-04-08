@@ -15,8 +15,6 @@
    * [U-Wave-Net](#u-wave-net)
      * [U-Wave-Net Structure](#u-wave-net-structure)
      * [Data Augmentation for U-Wave-Net](#data-augmentation-for-u-wave-net)
-     * [Result for the UWaveNet](#result-for-the-uwavenet)
-   * [DeepConvSep](#deepconvsep)
    * [Wave-U-Net with SE-ResNet Channel Attention](#wave-u-net-with-se-resnet-channel-attention)
 
 <div style="page-break-after: always;"></div>
@@ -126,11 +124,6 @@ NVIDIA
 - B * factor0 + C * factor1 = newA
 - A as input and C*factor1 as label
 - Factor0 and factor1 is chosen uniformly from the interval [0.7, 1.0].
-
-## Result for the [UWaveNet](https://github.com/f90/Wave-U-Net)
-- The result is better than mine results
-
-# DeepConvSep
 
 <div style="page-break-after: always;"></div>
 
