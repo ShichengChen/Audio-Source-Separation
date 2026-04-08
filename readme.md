@@ -17,6 +17,7 @@
      * [Data Augmentation for U-Wave-Net](#data-augmentation-for-u-wave-net)
      * [Result for the UWaveNet](#result-for-the-uwavenet)
    * [DeepConvSep](#deepconvsep)
+   * [Wave-U-Net with SE-ResNet Channel Attention](#wave-u-net-with-se-resnet-channel-attention)
 
 <div style="page-break-after: always;"></div>
 
@@ -28,7 +29,7 @@
 - [A Universal Music Translation Network](https://arxiv.org/pdf/1805.07848.pdf)
 - [WAVE-U-NET](https://arxiv.org/pdf/1806.03185.pdf)
 - https://github.com/MTG/DeepConvSep
-- https://github.com/ShichengChen/WaveUNet
+- [WaveUNet with SE-ResNet Channel Attention](https://github.com/ShichengChen/WaveUNet)
 
 <div style="page-break-after: always;"></div>
 
@@ -130,6 +131,12 @@ NVIDIA
 - The result is better than mine results
 
 # DeepConvSep
+
+<div style="page-break-after: always;"></div>
+
+# Wave-U-Net with SE-ResNet Channel Attention
+- [GitHub](https://github.com/ShichengChen/WaveUNet)
+- Adapted SE-ResNet channel attention from 2D vision to 1D audio for singing voice separation, improving Wave-U-Net's published SDR baseline by 5.6% via residual connections and squeeze-excitation blocks.
     
 
 
